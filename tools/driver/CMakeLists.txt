@@ -3,6 +3,8 @@ add_executable(mull-driver driver.cpp)
 
 target_link_libraries(mull-driver
   mull
+  google-test
+  # google-test-main
 )
 
 set(mulldriver_rpath "") # to be filled later.

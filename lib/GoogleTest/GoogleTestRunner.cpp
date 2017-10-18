@@ -128,7 +128,11 @@ void *GoogleTestRunner::GetCtorPointer(const llvm::Function &Function) {
 void *GoogleTestRunner::FunctionPointer(const char *FunctionName) {
   JITSymbol Symbol = ObjectLayer.findSymbol(FunctionName, false);
   void *FPointer = reinterpret_cast<void *>(static_cast<uintptr_t>(Symbol.getAddress()));
-  assert(FPointer && "Can't find pointer to function");
+  if (!FPointer) {
+    errs() << "Can't find pointer to function: " << FunctionName << "\n";
+
+    assert(FPointer && "Can't find pointer to function");
+  }
   return FPointer;
 }
 

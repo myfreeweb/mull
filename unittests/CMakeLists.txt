@@ -52,6 +52,7 @@ target_link_libraries(MullUnitTests
   mull
 
   google-test
+  google-test-main
 
   ${MULL_DEPENDENCY_LLVM_LIBRARIES}
 
