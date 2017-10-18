@@ -1,6 +1,6 @@
 
 #include "Context.h"
-#include "MutationOperators/AddMutationOperator.h"
+#include "MutationOperators/MathAddMutationOperator.h"
 #include "SimpleTest/SimpleTestFinder.h"
 #include "TestModuleFactory.h"
 #include "Toolchain/Compiler.h"
@@ -51,7 +51,7 @@ TEST(SimpleTestRunner, runTest) {
   Ctx.addModule(std::move(mullOwnedModuleWithTestees));
 
   std::vector<std::unique_ptr<MutationOperator>> mutationOperators;
-  mutationOperators.emplace_back(make_unique<AddMutationOperator>());
+  mutationOperators.emplace_back(make_unique<MathAddMutationOperator>());
 
   SimpleTestFinder testFinder(std::move(mutationOperators));
 
@@ -82,7 +82,7 @@ TEST(SimpleTestRunner, runTest) {
   /// expecting it to fail
 
   Function *Testee = Ctx.lookupDefinedFunction("count_letters");
-  AddMutationOperator MutOp;
+  MathAddMutationOperator MutOp;
   std::vector<MutationOperator *> MutOps({&MutOp});
 
   std::vector<MutationPoint *> MutationPoints = testFinder.findMutationPoints(Ctx, *Testee);
@@ -135,7 +135,7 @@ TEST(SimpleTestRunner, runTestUsingLibC) {
   Ctx.addModule(std::move(mullOwnedModuleWithTestees));
 
   std::vector<std::unique_ptr<MutationOperator>> mutationOperators;
-  mutationOperators.emplace_back(make_unique<AddMutationOperator>());
+  mutationOperators.emplace_back(make_unique<MathAddMutationOperator>());
 
   SimpleTestFinder Finder(std::move(mutationOperators));
 
@@ -162,7 +162,7 @@ TEST(SimpleTestRunner, runTestUsingLibC) {
   /// expecting it to fail
 
   Function *Testee = Ctx.lookupDefinedFunction("sum");
-  AddMutationOperator MutOp;
+  MathAddMutationOperator MutOp;
   std::vector<MutationOperator *> MutOps({&MutOp});
 
   std::vector<MutationPoint *> MutationPoints = Finder.findMutationPoints(Ctx, *Testee);
@@ -214,7 +214,7 @@ TEST(SimpleTestRunner, runTestUsingExternalLibrary) {
   Ctx.addModule(std::move(mullOwnedModuleWithTestees));
 
   std::vector<std::unique_ptr<MutationOperator>> mutationOperators;
-  mutationOperators.emplace_back(make_unique<AddMutationOperator>());
+  mutationOperators.emplace_back(make_unique<MathAddMutationOperator>());
 
   SimpleTestFinder testFinder(std::move(mutationOperators));
 

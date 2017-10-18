@@ -16,7 +16,7 @@
 
 #include "GoogleTest/GoogleTest_Test.h"
 
-#include "MutationOperators/AddMutationOperator.h"
+#include "MutationOperators/MathAddMutationOperator.h"
 #include "MutationOperators/NegateConditionMutationOperator.h"
 #include "MutationOperators/RemoveVoidFunctionMutationOperator.h"
 

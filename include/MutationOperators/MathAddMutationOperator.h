@@ -12,7 +12,7 @@ class MutationOperatorFilter;
 
 /// Arithmetic with Overflow Intrinsics
 /// http://llvm.org/docs/LangRef.html#id1468
-class AddMutationOperator : public MutationOperator {
+class MathAddMutationOperator : public MutationOperator {
 
   bool isAddWithOverflow(llvm::Value &V);
   llvm::Function *replacementForAddWithOverflow(llvm::Function *addFunction,

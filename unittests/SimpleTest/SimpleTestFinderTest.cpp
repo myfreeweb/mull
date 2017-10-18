@@ -1,7 +1,7 @@
 #include "SimpleTest/SimpleTestFinder.h"
 
 #include "Context.h"
-#include "MutationOperators/AddMutationOperator.h"
+#include "MutationOperators/MathAddMutationOperator.h"
 #include "MutationOperators/AndOrReplacementMutationOperator.h"
 #include "MutationOperators/NegateConditionMutationOperator.h"
 #include "MutationOperators/RemoveVoidFunctionMutationOperator.h"
@@ -32,7 +32,7 @@ TEST(SimpleTestFinder, FindTest) {
   Ctx.addModule(std::move(mullModuleWithTests));
 
   std::vector<std::unique_ptr<MutationOperator>> mutationOperators;
-  mutationOperators.emplace_back(make_unique<AddMutationOperator>());
+  mutationOperators.emplace_back(make_unique<MathAddMutationOperator>());
 
   SimpleTestFinder finder(std::move(mutationOperators));
 
@@ -41,7 +41,7 @@ TEST(SimpleTestFinder, FindTest) {
   ASSERT_EQ(1U, tests.size());
 }
 
-TEST(SimpleTestFinder, FindMutationPoints_AddMutationOperator) {
+TEST(SimpleTestFinder, FindMutationPoints_MathAddMutationOperator) {
   auto ModuleWithTests   = TestModuleFactory.createTesterModule();
   auto ModuleWithTestees = TestModuleFactory.createTesteeModule();
 
@@ -53,7 +53,7 @@ TEST(SimpleTestFinder, FindMutationPoints_AddMutationOperator) {
   Ctx.addModule(std::move(mullModuleWithTestees));
 
   std::vector<std::unique_ptr<MutationOperator>> mutationOperators;
-  std::unique_ptr<AddMutationOperator> addMutationOperator = make_unique<AddMutationOperator>();
+  std::unique_ptr<MathAddMutationOperator> addMutationOperator = make_unique<MathAddMutationOperator>();
   mutationOperators.emplace_back(std::move(addMutationOperator));
 
   SimpleTestFinder Finder(std::move(mutationOperators));

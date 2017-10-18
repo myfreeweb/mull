@@ -4,7 +4,7 @@
 #include "Logger.h"
 #include "MutationPoint.h"
 
-#include "MutationOperators/AddMutationOperator.h"
+#include "MutationOperators/MathAddMutationOperator.h"
 #include "MutationOperators/NegateConditionMutationOperator.h"
 
 #include <llvm/IR/InstIterator.h>

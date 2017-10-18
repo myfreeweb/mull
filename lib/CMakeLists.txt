@@ -8,11 +8,11 @@ set(mull_sources
   DynamicCallTree.cpp
   Filter.cpp
 
-  MutationOperators/AddMutationOperator.cpp
   MutationOperators/AndOrReplacementMutationOperator.cpp
   MutationOperators/MutationOperatorsFactory.cpp
   MutationOperators/NegateConditionMutationOperator.cpp
   MutationOperators/RemoveVoidFunctionMutationOperator.cpp
+  MutationOperators/MathAddMutationOperator.cpp
   MutationOperators/MathDivMutationOperator.cpp
   MutationOperators/MathMulMutationOperator.cpp
   MutationOperators/MathSubMutationOperator.cpp
