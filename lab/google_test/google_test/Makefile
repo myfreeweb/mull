@@ -17,9 +17,10 @@ SYSROOT=-isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.pl
 NO_CXA=
 #NO_CXA=-fno-use-cxa-atexit
 
-# -fno-rtti is needed because we compile GoogleTest with -fno-rtti.
-CC_FLAGS=-g -fno-exceptions -fno-rtti $(STD_VERSION) $(HEADER_SEARCH_FLAGS) $(MACRO_DEFINITONS) $(MACOSX_VERSION) $(SYSROOT) $(NO_CXA)
-# CC_FLAGS=-g -fno-exceptions -fPIC $(STD_VERSION) $(HEADER_SEARCH_FLAGS) $(MACRO_DEFINITONS) $(MACOSX_VERSION) $(SYSROOT) $(NO_CXA)
+CXXFLAGS:=$(shell /opt/llvm-3.9/bin/llvm-config --cxxflags)  -g
+CXXFLAGS:=$(subst -O3,-O0,$(CXXFLAGS))
+
+CC_FLAGS=$(CXXFLAGS) $(STD_VERSION) $(HEADER_SEARCH_FLAGS) $(MACRO_DEFINITONS) $(MACOSX_VERSION) $(SYSROOT) $(NO_CXA)
 
 OBJECTS= $(BUILD_DIR)/Test.o \
         $(BUILD_DIR)/Testee.o
@@ -64,7 +65,7 @@ $(BUILD_DIR)/%.o:
 
 # -stdlib=libc++ comes from https://stackoverflow.com/a/16353112/598057
 $(BUILD_DIR)/tests: $(OBJECTS)
-	$(CC)++ -stdlib=libc++ -L$(GTEST_DIR) -L/opt/mull/BuildXcode/googletest/Debug/ -lgoogle-test $^ -o $@
+	$(CC)++ -stdlib=libc++ -L$(GTEST_DIR) -L/opt/mull/BuildXcode/googletest/Debug/ -lgoogle-test -lgoogle-test-main $^ -o $@
 
 clean:
 	rm -rf $(BUILD_DIR)
