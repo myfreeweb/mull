@@ -35,6 +35,7 @@ using namespace std::chrono;
 namespace mull {
 
 extern "C" void mull_enterFunction(Driver *driver, uint64_t functionIndex) {
+//  printf("%p %llu %llu\n", (void *)driver, (uint64_t)driver, functionIndex);
   assert(driver);
   assert(driver->callTreeMapping());
   DynamicCallTree::enterFunction(functionIndex,
@@ -78,7 +79,7 @@ Driver::~Driver() {
 std::unique_ptr<Result> Driver::Run() {
   std::vector<std::unique_ptr<TestResult>> Results;
   std::vector<std::unique_ptr<Testee>> allTestees;
-
+  printf("%p %llu %lld\n", (void *)this, (uint64_t)this, (int64_t)this);
   /// Assumption: all modules will be used during the execution
   /// Therefore we load them into memory and compile immediately
   /// Later on modules used only for generating of mutants
@@ -308,6 +309,7 @@ void Driver::injectCallbacks(llvm::Function *function, uint64_t index) {
     CallInst *leaveFunctionCall = CallInst::Create(leaveFunction, parameters);
     leaveFunctionCall->insertBefore(returnStatement);
   }
+//  function->dump();
 }
 
 std::vector<llvm::object::ObjectFile *> Driver::AllButOne(llvm::Module *One) {

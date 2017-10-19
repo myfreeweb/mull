@@ -1,5 +1,5 @@
-bitcode_file_list: /opt/mull/lab/google_test/google_test/bitcode.list
+bitcode_file_list: /Users/alexdenisov/Projects/Mull/mull/lab/google_test/google_test/bitcode.list
 fork: false
-
+use_cache: false
 
 # /opt/mull/lab/google_test/google_test/config.yml

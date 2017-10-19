@@ -65,7 +65,7 @@ $(BUILD_DIR)/%.o:
 
 # -stdlib=libc++ comes from https://stackoverflow.com/a/16353112/598057
 $(BUILD_DIR)/tests: $(OBJECTS)
-	$(CC)++ -stdlib=libc++ -L$(GTEST_DIR) -L/opt/mull/BuildXcode/googletest/Debug/ -lgoogle-test -lgoogle-test-main $^ -o $@
+	$(CC)++ -stdlib=libc++ -L$(GTEST_DIR) -L//Users/alexdenisov/Projects/Mull/mull/BuildXcode/googletest/Debug/ -lgoogle-test -lgoogle-test-main $^ -o $@
 
 clean:
 	rm -rf $(BUILD_DIR)
