@@ -13,7 +13,7 @@ using namespace llvm;
 using namespace std;
 
 vector<unique_ptr<MutationPoint>> getMutationPoints(MullModule *mullModule,
-                                                    MutationOperator *mutationOperator) {
+                                                    MutationOperator &mutationOperator) {
   vector<unique_ptr<MutationPoint>> points;
   auto module = mullModule->getModule();
 
@@ -25,10 +25,12 @@ vector<unique_ptr<MutationPoint>> getMutationPoints(MullModule *mullModule,
       for (auto &instruction : basicBlock) {
         MutationPointAddress address(functionIndex, blockIndex, instructionIndex);
 
-        points.push_back(make_unique<MutationPoint>(mutationOperator,
-                                                    address,
-                                                    &instruction,
-                                                    mullModule));
+        auto *point = mutationOperator.getMutationPoint(mullModule,
+                                                        address,
+                                                        &instruction);
+        if (point) {
+          points.push_back(unique_ptr<MutationPoint>(point));
+        }
 
         instructionIndex++;
       }
@@ -47,7 +49,7 @@ TEST(CXXJunkDetector, math_add_c) {
 
   MathAddMutationOperator mutationOperator;
   auto mullModule = testModuleFactory.create_JunkDetection_CXX_MathC_Module();
-  auto ownedPoints = getMutationPoints(mullModule.get(), &mutationOperator);
+  auto ownedPoints = getMutationPoints(mullModule.get(), mutationOperator);
 
   CXXJunkDetector detector;
   vector<MutationPoint *> nonJunk;
@@ -67,7 +69,7 @@ TEST(CXXJunkDetector, math_add_cpp) {
 
   MathAddMutationOperator mutationOperator;
   auto mullModule = testModuleFactory.create_JunkDetection_CXX_MathCpp_Module();
-  auto ownedPoints = getMutationPoints(mullModule.get(), &mutationOperator);
+  auto ownedPoints = getMutationPoints(mullModule.get(), mutationOperator);
 
   CXXJunkDetector detector;
   vector<MutationPoint *> nonJunk;
