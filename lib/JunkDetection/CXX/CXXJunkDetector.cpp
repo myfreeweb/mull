@@ -25,6 +25,11 @@ void dump_cursor(CXCursor cursor, CXSourceLocation location, PhysicalAddress &ad
   CXCursorKind kind = clang_getCursorKind(cursor);
   cout << "Kind '" << clang_getCursorKindSpelling(kind) << "'\n";
 
+  if (kind == CXCursor_Namespace) {
+    cout << "not printing namespace contents\n";
+    return;
+  }
+
   CXSourceRange range = clang_getCursorExtent(cursor);
   CXSourceLocation begin = clang_getRangeStart(range);
   CXSourceLocation end = clang_getRangeEnd(range);
@@ -85,7 +90,16 @@ CXXJunkDetector::~CXXJunkDetector() {
 
 pair<CXCursor, CXSourceLocation> CXXJunkDetector::cursorAndLocation(PhysicalAddress &address) {
   if (units.count(address.filepath) == 0) {
-    const char *argv[] = { "-x", "c++", nullptr };
+    const char *argv[] = {
+      "-x", "c++", "-std=c++11",
+      "-DGTEST_HAS_TR1_TUPLE=0", "-DGTEST_LANG_CXX11=1", "-DGTEST_HAS_RTTI=0",
+      "-D__STDC_CONSTANT_MACROS", "-D__STDC_FORMAT_MACROS", "-D__STDC_LIMIT_MACROS",
+      "-I/Users/alexdenisov/Projects/LLVM/llvm/include",
+      "-I/Users/alexdenisov/Projects/LLVM/build/include/",
+      "-I/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.13.sdk/usr/include/libxml2",
+      "-I/Users/alexdenisov/Projects/LLVM/llvm/utils/unittest/googletest/include",
+      "-I/Users/alexdenisov/Projects/LLVM/llvm/utils/unittest/googlemock/include",
+      nullptr };
     const int argc = sizeof(argv) / sizeof(argv[0]) - 1;
     CXTranslationUnit unit = clang_parseTranslationUnit(index,
                                                         address.filepath.c_str(),
@@ -129,15 +143,14 @@ bool CXXJunkDetector::isJunk(MutationPoint *point) {
     return true;
   }
 
-//  cout << point->getUniqueIdentifier() << "\n";
-//  point->getOriginalValue()->dump();
+  bool junk = false;
 
   switch (point->getOperator()->getKind()) {
     case MutationOperatorKind::MathAdd:
-      return junkMathAdd(cursor, location, address);
+      junk = junkMathAdd(cursor, location, address);
       break;
     case MutationOperatorKind::NegateCondition:
-      return junkNegateCondition(cursor, location, address);
+      junk = junkNegateCondition(cursor, location, address);
       break;
 
     default:
@@ -145,12 +158,21 @@ bool CXXJunkDetector::isJunk(MutationPoint *point) {
       break;
   }
 
-  return false;
+  if (junk) {
+    cout << point->getUniqueIdentifier() << "\n";
+    point->getOriginalValue()->dump();
+  }
+
+  return junk;
 }
 
 bool CXXJunkDetector::junkMathAdd(CXCursor cursor, CXSourceLocation location, PhysicalAddress &address) {
   CXCursorKind kind = clang_getCursorKind(cursor);
-  if (kind != CXCursor_BinaryOperator && kind != CXCursor_UnaryOperator && kind != CXCursor_CompoundAssignOperator) {
+  if (kind != CXCursor_BinaryOperator &&
+      kind != CXCursor_UnaryOperator &&
+      kind != CXCursor_CompoundAssignOperator &&
+      kind != CXCursor_OverloadedDeclRef) {
+    dump_cursor(cursor, location, address);
     return true;
   }
   unsigned int mutationOffset = 0;
@@ -162,6 +184,7 @@ bool CXXJunkDetector::junkMathAdd(CXCursor cursor, CXSourceLocation location, Ph
   fclose(f);
 
   if (symbol != '+' && symbol != '-') {
+    dump_cursor(cursor, location, address);
     return true;
   }
 
