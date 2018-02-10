@@ -52,6 +52,8 @@ set(mull_sources
   SQLiteReporter.cpp
 
   Metrics/Metrics.cpp
+
+  JunkDetection/CXX/CXXJunkDetector.cpp
 )
 
 set(mull_header_dirs

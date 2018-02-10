@@ -30,6 +30,8 @@ set(mull_unittests_sources
   TestModuleFactory.h
 
   ConfigParserTestFixture.h
+
+  JunkDetection/CXXJunkDetectorTests.cpp
 )
 
 set(mull_unittests_rpath "") # to be filled later
