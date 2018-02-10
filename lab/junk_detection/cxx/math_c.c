@@ -39,7 +39,12 @@ int f1(int a, int b) {
     return 42;
   }
 
+  if ( (b && a) || a++ ) {
+    return 42;
+  }
+
   int x = a ? (b * b) : 6;
+  int x2 = !a ? (b * b) : 6;
 
   return 0;
 }

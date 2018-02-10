@@ -25,6 +25,10 @@ public:
                                   MutationPointAddress &address,
                                   llvm::Instruction *instruction) override;
 
+  MutationOperatorKind getKind() override {
+    return MutationOperatorKind::MathAdd;
+  }
+
   std::string uniqueID() override {
     return ID;
   }

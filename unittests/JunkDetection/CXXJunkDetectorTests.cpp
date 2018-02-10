@@ -78,7 +78,7 @@ TEST(CXXJunkDetector, math_add_c) {
     }
   }
 
-  ASSERT_EQ(11ul, nonJunk.size());
+  ASSERT_EQ(12ul, nonJunk.size());
 }
 
 TEST(CXXJunkDetector, math_add_cpp) {
@@ -110,7 +110,7 @@ TEST(CXXJunkDetector, negate_c) {
   auto mullModule = testModuleFactory.create_JunkDetection_CXX_MathC_Module();
   auto ownedPoints = getMutationPoints(mullModule.get(),
                                        mutationOperator,
-                                       MutationsSelector::AllInstructions);
+                                       MutationsSelector::OnlyMatchingInstructions);
 
   CXXJunkDetector detector;
   vector<MutationPoint *> nonJunk;
@@ -122,7 +122,7 @@ TEST(CXXJunkDetector, negate_c) {
     }
   }
 
-  ASSERT_EQ(11ul, nonJunk.size());
+  ASSERT_EQ(17ul, nonJunk.size());
 }
 
 TEST(CXXJunkDetector, negate_cpp) {
@@ -132,7 +132,7 @@ TEST(CXXJunkDetector, negate_cpp) {
   auto mullModule = testModuleFactory.create_JunkDetection_CXX_MathCpp_Module();
   auto ownedPoints = getMutationPoints(mullModule.get(),
                                        mutationOperator,
-                                       MutationsSelector::AllInstructions);
+                                       MutationsSelector::OnlyMatchingInstructions);
 
   CXXJunkDetector detector;
   vector<MutationPoint *> nonJunk;

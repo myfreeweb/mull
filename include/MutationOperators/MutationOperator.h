@@ -17,12 +17,19 @@ class MullModule;
 class MutationPoint;
 class MutationPointAddress;
 
+enum class MutationOperatorKind {
+  Unknown,
+  MathAdd,
+  NegateCondition
+};
+
 class MutationOperator {
 public:
   virtual MutationPoint *getMutationPoint(MullModule *module,
                                           MutationPointAddress &address,
                                           llvm::Instruction *instruction) = 0;
 
+  virtual MutationOperatorKind getKind() { return MutationOperatorKind::Unknown; }
   /// FIXME: Renmae to 'getUniqueIdentifier'
   virtual std::string uniqueID() = 0;
   virtual std::string uniqueID() const = 0;

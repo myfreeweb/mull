@@ -33,6 +33,9 @@ public:
 private:
   std::pair<CXCursor, CXSourceLocation> cursorAndLocation(PhysicalAddress &address);
 
+  bool junkMathAdd(CXCursor cursor, CXSourceLocation location, PhysicalAddress &address);
+  bool junkNegateCondition(CXCursor cursor, CXSourceLocation location, PhysicalAddress &address);
+
   CXIndex index;
   std::map<std::string, CXTranslationUnit> units;
 };

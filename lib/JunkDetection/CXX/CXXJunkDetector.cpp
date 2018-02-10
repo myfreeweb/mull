@@ -1,5 +1,6 @@
 #include "JunkDetection/CXX/CXXJunkDetector.h"
 #include "MutationPoint.h"
+#include "MutationOperator.h"
 
 #include "Logger.h"
 
@@ -20,6 +21,7 @@ ostream& operator<<(ostream& stream, const CXString& str) {
 }
 
 void dump_cursor(CXCursor cursor, CXSourceLocation location, PhysicalAddress &address) {
+  cout << address.filepath << ":" << address.line << ":" << address.column << "\n";
   CXCursorKind kind = clang_getCursorKind(cursor);
   cout << "Kind '" << clang_getCursorKindSpelling(kind) << "'\n";
 
@@ -127,23 +129,50 @@ bool CXXJunkDetector::isJunk(MutationPoint *point) {
     return true;
   }
 
+//  cout << point->getUniqueIdentifier() << "\n";
+//  point->getOriginalValue()->dump();
+
+  switch (point->getOperator()->getKind()) {
+    case MutationOperatorKind::MathAdd:
+      return junkMathAdd(cursor, location, address);
+      break;
+    case MutationOperatorKind::NegateCondition:
+      return junkNegateCondition(cursor, location, address);
+      break;
+
+    default:
+      Logger::debug() << "CXXJunkDetector does not work with " << point->getOperator()->uniqueID() << " yet.\n";
+      break;
+  }
+
+  return false;
+}
+
+bool CXXJunkDetector::junkMathAdd(CXCursor cursor, CXSourceLocation location, PhysicalAddress &address) {
   CXCursorKind kind = clang_getCursorKind(cursor);
   if (kind != CXCursor_BinaryOperator && kind != CXCursor_UnaryOperator && kind != CXCursor_CompoundAssignOperator) {
     return true;
-  } else {
-    unsigned int mutationOffset = 0;
-    clang_getFileLocation(location, nullptr, nullptr, nullptr, &mutationOffset);
-    FILE *f = fopen(address.filepath.c_str(), "rb");
-    char symbol;
-    fseek(f, mutationOffset, SEEK_SET);
-    fread(&symbol, sizeof(char), 1, f);
-    fclose(f);
+  }
+  unsigned int mutationOffset = 0;
+  clang_getFileLocation(location, nullptr, nullptr, nullptr, &mutationOffset);
+  FILE *f = fopen(address.filepath.c_str(), "rb");
+  char symbol;
+  fseek(f, mutationOffset, SEEK_SET);
+  fread(&symbol, sizeof(char), 1, f);
+  fclose(f);
 
-    if (symbol != '+' && symbol != '-') {
-      return true;
-    }
+  if (symbol != '+' && symbol != '-') {
+    return true;
+  }
 
-    return false;
+  return false;
+}
+
+bool CXXJunkDetector::junkNegateCondition(CXCursor cursor, CXSourceLocation location, PhysicalAddress &address) {
+  CXCursorKind kind = clang_getCursorKind(cursor);
+  if (kind != CXCursor_BinaryOperator && kind != CXCursor_UnaryOperator && kind != CXCursor_DeclRefExpr) {
+    dump_cursor(cursor, location, address);
+    return true;
   }
 
   return false;
