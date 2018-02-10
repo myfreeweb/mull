@@ -23,10 +23,34 @@ public:
 
     return y;
   }
+
+  int f1(int a, int b) {
+    if (a) {
+      return b;
+    }
+
+    if (b || a) {
+      return a;
+    }
+
+    if (b && a) {
+      return 42;
+    }
+
+    int x = a ? (b * b) : 6;
+
+    return x;
+  }
+
 };
 
-int x() {
+int x(int xx) {
   FooBar f;
-  return f.f(2, 4);
+  f.f(2, 4);
+  if (f.f1(xx | 143, xx)) {
+    throw xx;
+  }
+
+  return 117;
 }
 

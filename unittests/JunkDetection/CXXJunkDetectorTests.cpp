@@ -1,7 +1,9 @@
 #include "JunkDetection/CXX/CXXJunkDetector.h"
 #include "TestModuleFactory.h"
-#include "MutationOperators/MathAddMutationOperator.h"
 #include "MutationPoint.h"
+
+#include "MutationOperators/MathAddMutationOperator.h"
+#include "MutationOperators/NegateConditionMutationOperator.h"
 
 #include "gtest/gtest.h"
 
@@ -12,8 +14,14 @@ using namespace mull;
 using namespace llvm;
 using namespace std;
 
+enum class MutationsSelector {
+  AllInstructions,
+  OnlyMatchingInstructions
+};
+
 vector<unique_ptr<MutationPoint>> getMutationPoints(MullModule *mullModule,
-                                                    MutationOperator &mutationOperator) {
+                                                    MutationOperator &mutationOperator,
+                                                    MutationsSelector selector) {
   vector<unique_ptr<MutationPoint>> points;
   auto module = mullModule->getModule();
 
@@ -25,11 +33,18 @@ vector<unique_ptr<MutationPoint>> getMutationPoints(MullModule *mullModule,
       for (auto &instruction : basicBlock) {
         MutationPointAddress address(functionIndex, blockIndex, instructionIndex);
 
-        auto *point = mutationOperator.getMutationPoint(mullModule,
-                                                        address,
-                                                        &instruction);
-        if (point) {
-          points.push_back(unique_ptr<MutationPoint>(point));
+        if (selector == MutationsSelector::AllInstructions) {
+          points.push_back(make_unique<MutationPoint>(&mutationOperator,
+                                                      address,
+                                                      &instruction,
+                                                      mullModule));
+        } else {
+          auto *point = mutationOperator.getMutationPoint(mullModule,
+                                                          address,
+                                                          &instruction);
+          if (point) {
+            points.push_back(unique_ptr<MutationPoint>(point));
+          }
         }
 
         instructionIndex++;
@@ -49,7 +64,9 @@ TEST(CXXJunkDetector, math_add_c) {
 
   MathAddMutationOperator mutationOperator;
   auto mullModule = testModuleFactory.create_JunkDetection_CXX_MathC_Module();
-  auto ownedPoints = getMutationPoints(mullModule.get(), mutationOperator);
+  auto ownedPoints = getMutationPoints(mullModule.get(),
+                                       mutationOperator,
+                                       MutationsSelector::OnlyMatchingInstructions);
 
   CXXJunkDetector detector;
   vector<MutationPoint *> nonJunk;
@@ -69,7 +86,9 @@ TEST(CXXJunkDetector, math_add_cpp) {
 
   MathAddMutationOperator mutationOperator;
   auto mullModule = testModuleFactory.create_JunkDetection_CXX_MathCpp_Module();
-  auto ownedPoints = getMutationPoints(mullModule.get(), mutationOperator);
+  auto ownedPoints = getMutationPoints(mullModule.get(),
+                                       mutationOperator,
+                                       MutationsSelector::OnlyMatchingInstructions);
 
   CXXJunkDetector detector;
   vector<MutationPoint *> nonJunk;
@@ -83,3 +102,48 @@ TEST(CXXJunkDetector, math_add_cpp) {
 
   ASSERT_EQ(11ul, nonJunk.size());
 }
+
+TEST(CXXJunkDetector, negate_c) {
+  TestModuleFactory testModuleFactory;
+
+  NegateConditionMutationOperator mutationOperator;
+  auto mullModule = testModuleFactory.create_JunkDetection_CXX_MathC_Module();
+  auto ownedPoints = getMutationPoints(mullModule.get(),
+                                       mutationOperator,
+                                       MutationsSelector::AllInstructions);
+
+  CXXJunkDetector detector;
+  vector<MutationPoint *> nonJunk;
+
+  for (auto &point : ownedPoints) {
+    MutationPoint *p = point.get();
+    if (!detector.isJunk(p)) {
+      nonJunk.push_back(p);
+    }
+  }
+
+  ASSERT_EQ(11ul, nonJunk.size());
+}
+
+TEST(CXXJunkDetector, negate_cpp) {
+  TestModuleFactory testModuleFactory;
+
+  NegateConditionMutationOperator mutationOperator;
+  auto mullModule = testModuleFactory.create_JunkDetection_CXX_MathCpp_Module();
+  auto ownedPoints = getMutationPoints(mullModule.get(),
+                                       mutationOperator,
+                                       MutationsSelector::AllInstructions);
+
+  CXXJunkDetector detector;
+  vector<MutationPoint *> nonJunk;
+
+  for (auto &point : ownedPoints) {
+    MutationPoint *p = point.get();
+    if (!detector.isJunk(p)) {
+      nonJunk.push_back(p);
+    }
+  }
+
+  ASSERT_EQ(11ul, nonJunk.size());
+}
+

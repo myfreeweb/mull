@@ -22,3 +22,25 @@ int f(int a, int b) {
   return y;
 }
 
+int f1(int a, int b) {
+  if (a) {
+    return b;
+  }
+
+  if (b || a) {
+    return a;
+  }
+
+  if (b && a) {
+    return 42;
+  }
+
+  if ( (b && a) || (a * b) ) {
+    return 42;
+  }
+
+  int x = a ? (b * b) : 6;
+
+  return 0;
+}
+
