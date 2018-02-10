@@ -55,6 +55,9 @@ public:
 
   std::unique_ptr<MullModule> create_CustomTest_OpenSSL_bio_enc_test_Module();
 
+  std::unique_ptr<MullModule> create_JunkDetection_CXX_MathC_Module();
+  std::unique_ptr<MullModule> create_JunkDetection_CXX_MathCpp_Module();
+
 #pragma mark - Rust
   std::unique_ptr<MullModule> rustModule();
 

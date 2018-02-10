@@ -263,6 +263,15 @@ std::unique_ptr<MullModule> TestModuleFactory::create_CustomTest_OpenSSL_bio_enc
   return createModule(fixture, fixture);
 }
 
+std::unique_ptr<MullModule> TestModuleFactory::create_JunkDetection_CXX_MathC_Module() {
+  const char *fixture = "junk_detection/cxx/math_c.bc";
+  return createModuleFromBitcode(fixture, fixture);
+}
+std::unique_ptr<MullModule> TestModuleFactory::create_JunkDetection_CXX_MathCpp_Module() {
+  const char *fixture = "junk_detection/cxx/math_cpp.bc";
+  return createModuleFromBitcode(fixture, fixture);
+}
+
 #pragma mark - Rust
 
 std::unique_ptr<MullModule> TestModuleFactory::rustModule() {

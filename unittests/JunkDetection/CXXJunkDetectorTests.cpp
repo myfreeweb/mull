@@ -42,11 +42,11 @@ vector<unique_ptr<MutationPoint>> getMutationPoints(MullModule *mullModule,
   return points;
 }
 
-TEST(CXXJunkDetector, hello) {
+TEST(CXXJunkDetector, math_c) {
   TestModuleFactory testModuleFactory;
 
   MathAddMutationOperator mutationOperator;
-  auto mullModule = testModuleFactory.create_SimpleTest_CountLettersTest_Module();
+  auto mullModule = testModuleFactory.create_JunkDetection_CXX_MathC_Module();
   auto ownedPoints = getMutationPoints(mullModule.get(), &mutationOperator);
 
   CXXJunkDetector detector;
