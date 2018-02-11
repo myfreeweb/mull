@@ -12,6 +12,8 @@
 #include "MutationsFinder.h"
 #include "Metrics/Metrics.h"
 
+#include "JunkDetection/CXX/CXXJunkDetector.h"
+
 #include <llvm/Support/DynamicLibrary.h>
 
 #include <algorithm>
@@ -201,6 +203,17 @@ std::unique_ptr<Result> Driver::Run() {
   }
 
   Logger::debug() << "Driver::Run> found " << allMutationPoints.size() << " mutations\n";
+
+  vector<MutationPoint *> junkMutations;
+  CXXJunkDetector detector;
+  for (auto point : allMutationPoints) {
+    if (detector.isJunk(point)) {
+      junkMutations.push_back(point);
+    }
+  }
+
+  Logger::debug() << "Driver::Run> found " << junkMutations.size() << " junk mutations\n";
+  exit(182);
 
   std::vector<std::unique_ptr<MutationResult>> mutationResults;
   if (config.dryRunModeEnabled()) {

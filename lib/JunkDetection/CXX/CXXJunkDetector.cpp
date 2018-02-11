@@ -21,12 +21,22 @@ ostream& operator<<(ostream& stream, const CXString& str) {
 }
 
 void dump_cursor(CXCursor cursor, CXSourceLocation location, PhysicalAddress &address) {
-  cout << address.filepath << ":" << address.line << ":" << address.column << "\n";
   CXCursorKind kind = clang_getCursorKind(cursor);
+
+  if (kind == CXCursor_CompoundStmt ||
+      kind == CXCursor_CXXForRangeStmt ||
+      kind == CXCursor_Constructor ||
+      kind == CXCursor_CallExpr ||
+      kind == CXCursor_CXXDeleteExpr ||
+      kind == CXCursor_ClassTemplate) {
+    return;
+  }
+
+  cout << address.filepath << ":" << address.line << ":" << address.column << "\n";
   cout << "Kind '" << clang_getCursorKindSpelling(kind) << "'\n";
 
-  if (kind == CXCursor_Namespace) {
-    cout << "not printing namespace contents\n";
+  if (kind == CXCursor_Namespace || kind == CXCursor_CompoundStmt) {
+    cout << "not printing namespace/compound statement contents\n";
     return;
   }
 
@@ -149,9 +159,9 @@ bool CXXJunkDetector::isJunk(MutationPoint *point) {
     case MutationOperatorKind::MathAdd:
       junk = junkMathAdd(cursor, location, address);
       break;
-    case MutationOperatorKind::NegateCondition:
-      junk = junkNegateCondition(cursor, location, address);
-      break;
+//    case MutationOperatorKind::NegateCondition:
+//      junk = junkNegateCondition(cursor, location, address);
+//      break;
 
     default:
       Logger::debug() << "CXXJunkDetector does not work with " << point->getOperator()->uniqueID() << " yet.\n";
@@ -159,8 +169,8 @@ bool CXXJunkDetector::isJunk(MutationPoint *point) {
   }
 
   if (junk) {
-    cout << point->getUniqueIdentifier() << "\n";
-    point->getOriginalValue()->dump();
+//    cout << point->getUniqueIdentifier() << "\n";
+//    point->getOriginalValue()->dump();
   }
 
   return junk;
@@ -192,8 +202,35 @@ bool CXXJunkDetector::junkMathAdd(CXCursor cursor, CXSourceLocation location, Ph
 }
 
 bool CXXJunkDetector::junkNegateCondition(CXCursor cursor, CXSourceLocation location, PhysicalAddress &address) {
+  /// Junk:
+  ///
+  ///   CompoundStmt
+  ///   CXXConstructor
+  ///   CXXForRangeStmt
+  ///   CallExpr
+  ///   CXXDeleteExpr
+  ///   ClassTemplate
+  ///   ForStmt
+  ///
+
+  /// Maybe Junk
+  ///
+  ///   UnexposedDecl
+  ///   IfStmt
+  ///   VarDecl
+  ///   MemberRefExpr
+  ///
+
   CXCursorKind kind = clang_getCursorKind(cursor);
-  if (kind != CXCursor_BinaryOperator && kind != CXCursor_UnaryOperator && kind != CXCursor_DeclRefExpr) {
+  if (kind != CXCursor_BinaryOperator &&
+      kind != CXCursor_UnaryOperator &&
+      kind != CXCursor_DeclRefExpr &&
+      kind != CXCursor_TypeRef &&
+      kind != CXCursor_ParenExpr &&
+      kind != CXCursor_CompoundAssignOperator &&
+      kind != CXCursor_OverloadedDeclRef &&
+      kind != CXCursor_UnexposedDecl &&
+      kind != CXCursor_IfStmt) {
     dump_cursor(cursor, location, address);
     return true;
   }
