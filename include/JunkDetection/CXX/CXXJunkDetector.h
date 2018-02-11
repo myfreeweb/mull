@@ -35,6 +35,7 @@ private:
 
   bool junkMathAdd(CXCursor cursor, CXSourceLocation location, PhysicalAddress &address);
   bool junkNegateCondition(CXCursor cursor, CXSourceLocation location, PhysicalAddress &address);
+  bool junkRemoveVoidFunctionCall(CXCursor cursor, CXSourceLocation location, PhysicalAddress &address);
 
   CXIndex index;
   std::map<std::string, CXTranslationUnit> units;

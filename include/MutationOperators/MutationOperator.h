@@ -20,7 +20,8 @@ class MutationPointAddress;
 enum class MutationOperatorKind {
   Unknown,
   MathAdd,
-  NegateCondition
+  NegateCondition,
+  RemoveVoidFunctionCall
 };
 
 class MutationOperator {

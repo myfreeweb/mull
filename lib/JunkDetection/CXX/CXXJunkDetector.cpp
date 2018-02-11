@@ -23,20 +23,22 @@ ostream& operator<<(ostream& stream, const CXString& str) {
 void dump_cursor(CXCursor cursor, CXSourceLocation location, PhysicalAddress &address) {
   CXCursorKind kind = clang_getCursorKind(cursor);
 
-  if (kind == CXCursor_CompoundStmt ||
-      kind == CXCursor_CXXForRangeStmt ||
-      kind == CXCursor_Constructor ||
-      kind == CXCursor_CallExpr ||
-      kind == CXCursor_CXXDeleteExpr ||
-      kind == CXCursor_ClassTemplate) {
-    return;
-  }
+//  if (kind == CXCursor_CompoundStmt ||
+//      kind == CXCursor_CXXForRangeStmt ||
+//      kind == CXCursor_Constructor ||
+//      kind == CXCursor_CallExpr ||
+//      kind == CXCursor_CXXDeleteExpr ||
+//      kind == CXCursor_ClassTemplate) {
+//    return;
+//  }
 
   cout << address.filepath << ":" << address.line << ":" << address.column << "\n";
   cout << "Kind '" << clang_getCursorKindSpelling(kind) << "'\n";
 
-  if (kind == CXCursor_Namespace || kind == CXCursor_CompoundStmt) {
-    cout << "not printing namespace/compound statement contents\n";
+  if (kind == CXCursor_Namespace
+//      || kind == CXCursor_CompoundStmt
+      ) {
+    cout << "not printing contents\n";
     return;
   }
 
@@ -162,6 +164,9 @@ bool CXXJunkDetector::isJunk(MutationPoint *point) {
 //    case MutationOperatorKind::NegateCondition:
 //      junk = junkNegateCondition(cursor, location, address);
 //      break;
+    case MutationOperatorKind::RemoveVoidFunctionCall:
+      junk = junkRemoveVoidFunctionCall(cursor, location, address);
+      break;
 
     default:
       Logger::debug() << "CXXJunkDetector does not work with " << point->getOperator()->uniqueID() << " yet.\n";
@@ -169,8 +174,8 @@ bool CXXJunkDetector::isJunk(MutationPoint *point) {
   }
 
   if (junk) {
-//    cout << point->getUniqueIdentifier() << "\n";
-//    point->getOriginalValue()->dump();
+    cout << point->getUniqueIdentifier() << "\n";
+    point->getOriginalValue()->dump();
   }
 
   return junk;
@@ -235,5 +240,45 @@ bool CXXJunkDetector::junkNegateCondition(CXCursor cursor, CXSourceLocation loca
     return true;
   }
 
+  return false;
+}
+
+bool CXXJunkDetector::junkRemoveVoidFunctionCall(CXCursor cursor,
+                                                 CXSourceLocation location,
+                                                 PhysicalAddress &address) {
+  /// Junk
+  ///
+  ///   CompoundStmt <- MACROS ARE EVIL
+  ///   CXXDeleteExpr
+  ///
+
+  /// Probably Junk
+  ///
+  ///   CallExpr
+  ///   DeclRefExpr
+  ///   DefaultStmt
+  ///
+
+  /// Probably Not Junk
+  ///
+  ///   TypeRef
+  ///   NamespaceRef
+  ///
+
+  /// Not Junk
+  ///
+  ///   MemberRefExpr
+  ///
+
+  CXCursorKind kind = clang_getCursorKind(cursor);
+  if (kind != CXCursor_MemberRefExpr
+//      && kind != CXCursor_UnaryOperator
+//      && kind != CXCursor_CompoundAssignOperator
+//      && kind != CXCursor_OverloadedDeclRef
+      ) {
+    return false;
+  }
+
+  dump_cursor(cursor, location, address);
   return false;
 }
