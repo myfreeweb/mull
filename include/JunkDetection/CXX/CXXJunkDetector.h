@@ -33,9 +33,9 @@ public:
 private:
   std::pair<CXCursor, CXSourceLocation> cursorAndLocation(PhysicalAddress &address);
 
-  bool junkMathAdd(CXCursor cursor, CXSourceLocation location, PhysicalAddress &address);
-  bool junkNegateCondition(CXCursor cursor, CXSourceLocation location, PhysicalAddress &address);
-  bool junkRemoveVoidFunctionCall(CXCursor cursor, CXSourceLocation location, PhysicalAddress &address);
+  bool junkMathAdd(CXCursor cursor, CXSourceLocation location, PhysicalAddress &address, MutationPoint *point);
+  bool junkNegateCondition(CXCursor cursor, CXSourceLocation location, PhysicalAddress &address, MutationPoint *point);
+  bool junkRemoveVoidFunctionCall(CXCursor cursor, CXSourceLocation location, PhysicalAddress &address, MutationPoint *point);
 
   CXIndex index;
   std::map<std::string, CXTranslationUnit> units;

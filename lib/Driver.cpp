@@ -205,24 +205,27 @@ std::unique_ptr<Result> Driver::Run() {
   Logger::debug() << "Driver::Run> found " << allMutationPoints.size() << " mutations\n";
 
   vector<MutationPoint *> junkMutations;
+  vector<MutationPoint *> nonJunkMutations;
   CXXJunkDetector detector;
   for (auto point : allMutationPoints) {
     if (detector.isJunk(point)) {
       junkMutations.push_back(point);
+    } else {
+      nonJunkMutations.push_back(point);
     }
   }
 
   Logger::debug() << "Driver::Run> found " << junkMutations.size() << " junk mutations\n";
-  exit(182);
+//  exit(182);
 
   std::vector<std::unique_ptr<MutationResult>> mutationResults;
   if (config.dryRunModeEnabled()) {
-    mutationResults = dryRunMutations(allMutationPoints);
+    mutationResults = dryRunMutations(nonJunkMutations);
   } else {
-    mutationResults = runMutations(allMutationPoints);
+    mutationResults = runMutations(nonJunkMutations);
   }
 
-  return make_unique<Result>(std::move(foundTests), std::move(mutationResults), allMutationPoints);
+  return make_unique<Result>(std::move(foundTests), std::move(mutationResults), nonJunkMutations);
 }
 
 std::vector<std::unique_ptr<MutationResult>> Driver::dryRunMutations(const std::vector<MutationPoint *> &mutationPoints) {

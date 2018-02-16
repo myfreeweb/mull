@@ -20,24 +20,16 @@ ostream& operator<<(ostream& stream, const CXString& str) {
   return stream;
 }
 
-void dump_cursor(CXCursor cursor, CXSourceLocation location, PhysicalAddress &address) {
+void dump_cursor(CXCursor cursor, CXSourceLocation location, PhysicalAddress &address, MutationPoint *point) {
   CXCursorKind kind = clang_getCursorKind(cursor);
 
-//  if (kind == CXCursor_CompoundStmt ||
-//      kind == CXCursor_CXXForRangeStmt ||
-//      kind == CXCursor_Constructor ||
-//      kind == CXCursor_CallExpr ||
-//      kind == CXCursor_CXXDeleteExpr ||
-//      kind == CXCursor_ClassTemplate) {
-//    return;
-//  }
+  cout << point->getUniqueIdentifier() << "\n";
+  point->getOriginalValue()->dump();
 
   cout << address.filepath << ":" << address.line << ":" << address.column << "\n";
   cout << "Kind '" << clang_getCursorKindSpelling(kind) << "'\n";
 
-  if (kind == CXCursor_Namespace
-//      || kind == CXCursor_CompoundStmt
-      ) {
+  if (kind == CXCursor_Namespace) {
     cout << "not printing contents\n";
     return;
   }
@@ -104,13 +96,25 @@ pair<CXCursor, CXSourceLocation> CXXJunkDetector::cursorAndLocation(PhysicalAddr
   if (units.count(address.filepath) == 0) {
     const char *argv[] = {
       "-x", "c++", "-std=c++11",
-      "-DGTEST_HAS_TR1_TUPLE=0", "-DGTEST_LANG_CXX11=1", "-DGTEST_HAS_RTTI=0",
-      "-D__STDC_CONSTANT_MACROS", "-D__STDC_FORMAT_MACROS", "-D__STDC_LIMIT_MACROS",
+      "-DGTEST_HAS_TR1_TUPLE=0",
+      "-DGTEST_LANG_CXX11=1",
+      "-DGTEST_HAS_RTTI=0",
+      "-D__STDC_CONSTANT_MACROS",
+      "-D__STDC_FORMAT_MACROS",
+      "-D__STDC_LIMIT_MACROS",
       "-I/Users/alexdenisov/Projects/LLVM/llvm/include",
       "-I/Users/alexdenisov/Projects/LLVM/build/include/",
       "-I/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.13.sdk/usr/include/libxml2",
       "-I/Users/alexdenisov/Projects/LLVM/llvm/utils/unittest/googletest/include",
       "-I/Users/alexdenisov/Projects/LLVM/llvm/utils/unittest/googlemock/include",
+
+//      "-I/usr/local/LLVM/fmt",
+//      "-I/usr/local/LLVM/fmt/test",
+//      "-DFMT_USE_ENUM_BASE=1",
+//      "-DFMT_USE_FILE_DESCRIPTORS=1",
+//      "-DFMT_USE_TYPE_TRAITS=1",
+//      "-DGTEST_HAS_STD_WSTRING=1",
+//      "-DGTEST_USE_OWN_TR1_TUPLE=1",
       nullptr };
     const int argc = sizeof(argv) / sizeof(argv[0]) - 1;
     CXTranslationUnit unit = clang_parseTranslationUnit(index,
@@ -155,17 +159,15 @@ bool CXXJunkDetector::isJunk(MutationPoint *point) {
     return true;
   }
 
-  bool junk = false;
-
   switch (point->getOperator()->getKind()) {
     case MutationOperatorKind::MathAdd:
-      junk = junkMathAdd(cursor, location, address);
+      return junkMathAdd(cursor, location, address, point);
       break;
 //    case MutationOperatorKind::NegateCondition:
 //      junk = junkNegateCondition(cursor, location, address);
 //      break;
     case MutationOperatorKind::RemoveVoidFunctionCall:
-      junk = junkRemoveVoidFunctionCall(cursor, location, address);
+      return junkRemoveVoidFunctionCall(cursor, location, address, point);
       break;
 
     default:
@@ -173,40 +175,65 @@ bool CXXJunkDetector::isJunk(MutationPoint *point) {
       break;
   }
 
-  if (junk) {
-    cout << point->getUniqueIdentifier() << "\n";
-    point->getOriginalValue()->dump();
-  }
-
-  return junk;
+  return false;
 }
 
-bool CXXJunkDetector::junkMathAdd(CXCursor cursor, CXSourceLocation location, PhysicalAddress &address) {
+bool CXXJunkDetector::junkMathAdd(CXCursor cursor, CXSourceLocation location, PhysicalAddress &address, MutationPoint *point) {
   CXCursorKind kind = clang_getCursorKind(cursor);
-  if (kind != CXCursor_BinaryOperator &&
-      kind != CXCursor_UnaryOperator &&
-      kind != CXCursor_CompoundAssignOperator &&
-      kind != CXCursor_OverloadedDeclRef) {
-    dump_cursor(cursor, location, address);
+
+//  if (kind != CXCursor_BinaryOperator &&
+//      kind != CXCursor_UnaryOperator &&
+//      kind != CXCursor_CompoundAssignOperator &&
+//      kind != CXCursor_CompoundStmt &&
+//      kind != CXCursor_OverloadedDeclRef)
+//  {
+//    dump_cursor(cursor, location, address, point);
+//  }
+
+  /// Filtering out AST nodes that definitely represent junk
+  /// All the nodes that are not filtered out still may contain junk
+
+  /// Maybe Junk
+  ///
+  ///   SwitchStmt
+  ///
+
+  /// Not Junk
+  ///
+  ///   CompoundAssignOperator
+  ///   BinaryOperator
+  ///   UnaryOperator
+  ///
+
+  if (kind == CXCursor_SwitchStmt ||
+      kind == CXCursor_NamespaceRef ||
+      kind == CXCursor_NoDeclFound) {
+//    dump_cursor(cursor, location, address, point);
     return true;
   }
-  unsigned int mutationOffset = 0;
-  clang_getFileLocation(location, nullptr, nullptr, nullptr, &mutationOffset);
-  FILE *f = fopen(address.filepath.c_str(), "rb");
-  char symbol;
-  fseek(f, mutationOffset, SEEK_SET);
-  fread(&symbol, sizeof(char), 1, f);
-  fclose(f);
 
-  if (symbol != '+' && symbol != '-') {
-    dump_cursor(cursor, location, address);
-    return true;
+  if (kind == CXCursor_BinaryOperator ||
+      kind == CXCursor_UnaryOperator ||
+      kind == CXCursor_CompoundAssignOperator ||
+      kind == CXCursor_OverloadedDeclRef) {
+    unsigned int mutationOffset = 0;
+    clang_getFileLocation(location, nullptr, nullptr, nullptr, &mutationOffset);
+    FILE *f = fopen(address.filepath.c_str(), "rb");
+    char symbol;
+    fseek(f, mutationOffset, SEEK_SET);
+    fread(&symbol, sizeof(char), 1, f);
+    fclose(f);
+
+    if (symbol != '+' && symbol != '-') {
+      dump_cursor(cursor, location, address, point);
+      return true;
+    }
   }
 
   return false;
 }
 
-bool CXXJunkDetector::junkNegateCondition(CXCursor cursor, CXSourceLocation location, PhysicalAddress &address) {
+bool CXXJunkDetector::junkNegateCondition(CXCursor cursor, CXSourceLocation location, PhysicalAddress &address, MutationPoint *point) {
   /// Junk:
   ///
   ///   CompoundStmt
@@ -236,7 +263,7 @@ bool CXXJunkDetector::junkNegateCondition(CXCursor cursor, CXSourceLocation loca
       kind != CXCursor_OverloadedDeclRef &&
       kind != CXCursor_UnexposedDecl &&
       kind != CXCursor_IfStmt) {
-    dump_cursor(cursor, location, address);
+    dump_cursor(cursor, location, address, point);
     return true;
   }
 
@@ -245,7 +272,7 @@ bool CXXJunkDetector::junkNegateCondition(CXCursor cursor, CXSourceLocation loca
 
 bool CXXJunkDetector::junkRemoveVoidFunctionCall(CXCursor cursor,
                                                  CXSourceLocation location,
-                                                 PhysicalAddress &address) {
+                                                 PhysicalAddress &address, MutationPoint *point) {
   /// Junk
   ///
   ///   CompoundStmt <- MACROS ARE EVIL
@@ -279,6 +306,6 @@ bool CXXJunkDetector::junkRemoveVoidFunctionCall(CXCursor cursor,
     return false;
   }
 
-  dump_cursor(cursor, location, address);
+  dump_cursor(cursor, location, address, point);
   return false;
 }
