@@ -96,25 +96,25 @@ pair<CXCursor, CXSourceLocation> CXXJunkDetector::cursorAndLocation(PhysicalAddr
   if (units.count(address.filepath) == 0) {
     const char *argv[] = {
       "-x", "c++", "-std=c++11",
-      "-DGTEST_HAS_TR1_TUPLE=0",
-      "-DGTEST_LANG_CXX11=1",
-      "-DGTEST_HAS_RTTI=0",
-      "-D__STDC_CONSTANT_MACROS",
-      "-D__STDC_FORMAT_MACROS",
-      "-D__STDC_LIMIT_MACROS",
-      "-I/Users/alexdenisov/Projects/LLVM/llvm/include",
-      "-I/Users/alexdenisov/Projects/LLVM/build/include/",
-      "-I/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.13.sdk/usr/include/libxml2",
-      "-I/Users/alexdenisov/Projects/LLVM/llvm/utils/unittest/googletest/include",
-      "-I/Users/alexdenisov/Projects/LLVM/llvm/utils/unittest/googlemock/include",
+//      "-DGTEST_HAS_TR1_TUPLE=0",
+//      "-DGTEST_LANG_CXX11=1",
+//      "-DGTEST_HAS_RTTI=0",
+//      "-D__STDC_CONSTANT_MACROS",
+//      "-D__STDC_FORMAT_MACROS",
+//      "-D__STDC_LIMIT_MACROS",
+//      "-I/Users/alexdenisov/Projects/LLVM/llvm/include",
+//      "-I/Users/alexdenisov/Projects/LLVM/build/include/",
+//      "-I/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.13.sdk/usr/include/libxml2",
+//      "-I/Users/alexdenisov/Projects/LLVM/llvm/utils/unittest/googletest/include",
+//      "-I/Users/alexdenisov/Projects/LLVM/llvm/utils/unittest/googlemock/include",
 
-//      "-I/usr/local/LLVM/fmt",
-//      "-I/usr/local/LLVM/fmt/test",
-//      "-DFMT_USE_ENUM_BASE=1",
-//      "-DFMT_USE_FILE_DESCRIPTORS=1",
-//      "-DFMT_USE_TYPE_TRAITS=1",
-//      "-DGTEST_HAS_STD_WSTRING=1",
-//      "-DGTEST_USE_OWN_TR1_TUPLE=1",
+      "-I/usr/local/LLVM/fmt",
+      "-I/usr/local/LLVM/fmt/test",
+      "-DFMT_USE_ENUM_BASE=1",
+      "-DFMT_USE_FILE_DESCRIPTORS=1",
+      "-DFMT_USE_TYPE_TRAITS=1",
+      "-DGTEST_HAS_STD_WSTRING=1",
+      "-DGTEST_USE_OWN_TR1_TUPLE=1",
       nullptr };
     const int argc = sizeof(argv) / sizeof(argv[0]) - 1;
     CXTranslationUnit unit = clang_parseTranslationUnit(index,
@@ -163,9 +163,9 @@ bool CXXJunkDetector::isJunk(MutationPoint *point) {
     case MutationOperatorKind::MathAdd:
       return junkMathAdd(cursor, location, address, point);
       break;
-//    case MutationOperatorKind::NegateCondition:
-//      junk = junkNegateCondition(cursor, location, address);
-//      break;
+    case MutationOperatorKind::NegateCondition:
+      return junkNegateCondition(cursor, location, address, point);
+      break;
     case MutationOperatorKind::RemoveVoidFunctionCall:
       return junkRemoveVoidFunctionCall(cursor, location, address, point);
       break;
@@ -236,36 +236,114 @@ bool CXXJunkDetector::junkMathAdd(CXCursor cursor, CXSourceLocation location, Ph
 bool CXXJunkDetector::junkNegateCondition(CXCursor cursor, CXSourceLocation location, PhysicalAddress &address, MutationPoint *point) {
   /// Junk:
   ///
-  ///   CompoundStmt
-  ///   CXXConstructor
-  ///   CXXForRangeStmt
-  ///   CallExpr
-  ///   CXXDeleteExpr
-  ///   ClassTemplate
+  ///   CXXDeleteExpr:
+  ///       delete[] U.pVal;
+  ///       ^
+  ///
+  ///   CXXForRangeStmt:
+  ///       for (auto &PtrAndSize : CustomSizedSlabs) {
+  ///                             ^
+  ///
+  ///   CXXConstructor:
+  ///       Graph() {
+  ///       ^
+  ///
+  ///   CallExpr:
+  ///       S.insert(va_arg(ap, unsigned));
+  ///                ^
+  ///
+  ///   ClassTemplate:
+  ///       class NodeBase {
+  ///             ^
+  ///
   ///   ForStmt
   ///
 
-  /// Maybe Junk
+  /// Not Junk (probably)
   ///
-  ///   UnexposedDecl
-  ///   IfStmt
-  ///   VarDecl
-  ///   MemberRefExpr
+  ///   TypeRef:
+  ///     return !APInt::tcExtractBit(significandParts(), semantics->precision - 2);
+  ///             ^
+  ///   CompoundStmt:
+  ///     macro expansions
+  ///
+  ///   DeclRefExpr:
+  ///      if (!fill || fill->getNumWords() < numParts)
+  ///           ^
+  ///
+  ///   BinaryOperator:
+  ///      fill->getNumWords() < numParts
+  ///                          ^
+  ///
+  ///   MemberRefExpr:
+  ///      sign = !sign;
+  ///              ^
+  ///      bool isNegative() const { return sign; }
+  ///                                       ^
+  ///   UnaryOperator:
+  ///       if (~Parts[i])
+  ///           ^
+  ///
+  ///   ParenExpr:
+  ///       if (category == fcZero && !(fs & opUnderflow) && sign != addend.sign)
+  ///                                  ^
+  ///
+  ///   CompoundAssignOperator: ???
+  ///       subtract ^= static_cast<bool>(sign ^ rhs.sign);
+  ///                ^
+  ///
+  ///   IFStmt:
+  ///       macro expansion:
+  ///       if (LLVM_UNLIKELY(this->EndX >= this->CapacityX))
+  ///           ^
+  ///
+  ///   VarDecl: ???
+  ///       if (TreeTy* L = Current->getLeft())
+  ///                   ^
+  ///
+  ///   NamespaceRef:
+  ///       if (A.size() >= 2 && (A[0] != 'v' || !std::isdigit(A[1])))
+  ///                                             ^
+  ///
+  ///   ForStmt: ???
+  ///       for (unsigned n = 0; n != Nodes; n++)
+  ///         assert(CurSize[n] == NewSize[n] && "Insufficient element shuffle");
+  ///         ^
+  ///
+  ///   TemplateRef:
+  ///       return !PointerLikeTypeTraits<PT1>::getFromVoidPointer(Val.getPointer());
+  ///               ^
   ///
 
   CXCursorKind kind = clang_getCursorKind(cursor);
-  if (kind != CXCursor_BinaryOperator &&
-      kind != CXCursor_UnaryOperator &&
-      kind != CXCursor_DeclRefExpr &&
-      kind != CXCursor_TypeRef &&
-      kind != CXCursor_ParenExpr &&
-      kind != CXCursor_CompoundAssignOperator &&
-      kind != CXCursor_OverloadedDeclRef &&
-      kind != CXCursor_UnexposedDecl &&
-      kind != CXCursor_IfStmt) {
-    dump_cursor(cursor, location, address, point);
+
+  if (kind == CXCursor_CXXDeleteExpr ||
+      kind == CXCursor_CXXForRangeStmt ||
+      kind == CXCursor_ClassTemplate ||
+      kind == CXCursor_CallExpr ||
+      kind == CXCursor_NoDeclFound ||
+      kind == CXCursor_Namespace ||
+      kind == CXCursor_Constructor) {
     return true;
   }
+
+//  if (kind != CXCursor_BinaryOperator &&
+//      kind != CXCursor_UnaryOperator &&
+//      kind != CXCursor_DeclRefExpr &&
+//      kind != CXCursor_TypeRef &&
+//      kind != CXCursor_ParenExpr &&
+//      kind != CXCursor_IfStmt &&
+//      kind != CXCursor_CompoundAssignOperator &&
+//      kind != CXCursor_OverloadedDeclRef &&
+//      kind != CXCursor_UnexposedDecl &&
+//      kind != CXCursor_MemberRefExpr &&
+//      kind != CXCursor_VarDecl &&
+//      kind != CXCursor_NamespaceRef &&
+//      kind != CXCursor_ForStmt &&
+//      kind != CXCursor_CompoundStmt)
+//  {
+//    dump_cursor(cursor, location, address, point);
+//  }
 
   return false;
 }

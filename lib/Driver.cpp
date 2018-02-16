@@ -216,7 +216,7 @@ std::unique_ptr<Result> Driver::Run() {
   }
 
   Logger::debug() << "Driver::Run> found " << junkMutations.size() << " junk mutations\n";
-//  exit(182);
+  exit(182);
 
   std::vector<std::unique_ptr<MutationResult>> mutationResults;
   if (config.dryRunModeEnabled()) {
