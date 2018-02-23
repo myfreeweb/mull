@@ -50,6 +50,9 @@ class Driver {
   std::vector<llvm::object::OwningBinary<llvm::object::ObjectFile>> precompiledObjectFiles;
   std::vector<llvm::object::OwningBinary<llvm::object::ObjectFile>> instrumentedObjectFiles;
   std::vector<llvm::object::OwningBinary<llvm::object::ObjectFile>> ownedObjectFiles;
+
+  std::vector<std::unique_ptr<llvm::Module>> extractedModules;
+
   Instrumentation instrumentation;
   Metrics &metrics;
   JunkDetector &junkDetector;
@@ -78,6 +81,7 @@ public:
 private:
   /// Returns cached object files for all modules excerpt one provided
   std::vector<llvm::object::ObjectFile *> AllButOne(llvm::Module *One);
+  std::vector<llvm::object::ObjectFile *> AllObjectFiles();
 
   std::vector<llvm::object::ObjectFile *> AllInstrumentedObjectFiles();
 

@@ -33,6 +33,7 @@ static pid_t mullFork(const char *processName) {
 static std::string readFileAndUnlink(const char *filename) {
   FILE *file = fopen(filename, "r");
   if (!file) {
+    printf("\n%s\n", filename);
     perror("fopen");
     exit(1);
   }

@@ -162,7 +162,7 @@ int main(int argc, char *argv[]) {
 
   metrics.beginReportResult();
   SQLiteReporter reporter(config.getProjectName());
-  reporter.reportResults(result, config, metrics.driverRunTime());
+//  reporter.reportResults(result, config, metrics.driverRunTime());
   metrics.endReportResult();
 
   metrics.dump();

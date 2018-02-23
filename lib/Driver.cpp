@@ -15,6 +15,11 @@
 
 #include <llvm/Support/DynamicLibrary.h>
 
+#include <llvm/IR/Function.h>
+#include <llvm/Transforms/Utils/ValueMapper.h>
+#include <llvm/Transforms/Utils/Cloning.h>
+#include <llvm/ExecutionEngine/Orc/IndirectionUtils.h>
+
 #include <algorithm>
 #include <fstream>
 #include <vector>
@@ -25,6 +30,15 @@ using namespace llvm;
 using namespace llvm::object;
 using namespace mull;
 using namespace std;
+
+void cloneModuleFlagsMetadata(Module &Dst, const Module &Src,
+                              ValueToValueMapTy &VMap) {
+  auto *MFs = Src.getModuleFlagsMetadata();
+  if (!MFs)
+    return;
+  for (auto *MF : MFs->operands())
+    Dst.addModuleFlag(MapMetadata(MF, VMap));
+}
 
 Driver::~Driver() {
   delete this->sandbox;
@@ -48,6 +62,10 @@ Driver::~Driver() {
 /// Each result contains result of execution of an original test and
 /// all the results of each mutant within corresponding MutationPoint
 
+bool cmp_cntrs(const pair<Function *, size_t>  &a, const pair<Function *, size_t> &b) {
+  return a.second < b.second;
+}
+
 std::unique_ptr<Result> Driver::Run() {
   /// Assumption: all modules will be used during the execution
   /// Therefore we load them into memory and compile immediately
@@ -65,21 +83,6 @@ std::unique_ptr<Result> Driver::Run() {
 
     instrumentation.recordFunctions(module.getModule());
 
-    if (!config.dryRunModeEnabled()) {
-      metrics.beginCompileOriginalModule(module.getModule());
-      auto objectFile = toolchain.cache().getObject(module);
-      if (objectFile.getBinary() == nullptr) {
-        LLVMContext localContext;
-        auto clonedModule = module.clone(localContext);
-        objectFile = toolchain.compiler().compileModule(*clonedModule.get());
-        toolchain.cache().putObject(objectFile, module);
-      }
-
-      innerCache.insert(std::make_pair(module.getModule(), objectFile.getBinary()));
-      ownedObjectFiles.push_back(std::move(objectFile));
-      metrics.endCompileOriginalModule(module.getModule());
-    }
-
     metrics.beginCompileInstrumentedModule(module.getModule());
 
     auto objectFile = toolchain.cache().getInstrumentedObject(module);
@@ -95,7 +98,6 @@ std::unique_ptr<Result> Driver::Run() {
     instrumentedObjectFiles.push_back(std::move(objectFile));
 
     metrics.endCompileInstrumentedModule(module.getModule());
-
   }
 
   metrics.beginLoadPrecompiledObjectFiles();
@@ -258,32 +260,110 @@ std::vector<std::unique_ptr<MutationResult>> Driver::dryRunMutations(const std::
 }
 
 std::vector<std::unique_ptr<MutationResult>> Driver::runMutations(const std::vector<MutationPoint *> &mutationPoints) {
+  map<Function *, size_t> counters;
+
+  for (auto point: mutationPoints) {
+    Instruction *in = dyn_cast<Instruction>(point->getOriginalValue());
+    Function *parent = in->getParent()->getParent();
+    size_t cnt = counters[parent];
+    counters[parent] = cnt + 1;
+  }
+
+  vector<pair<Function *, size_t>> cntrs;
+
+  for (auto pp: counters) {
+    cntrs.push_back(pp);
+  }
+
+  std::sort(cntrs.begin(), cntrs.end(), cmp_cntrs);
+
+  for (auto pp: cntrs) {
+    Function *function = pp.first;
+    Module *sourceModule = function->getParent();
+    ///  ; ModuleID = '/Users/alexdenisov/Projects/OpenSSL/openssl/test/destest.o'
+
+    auto module = llvm::make_unique<Module>(function->getName(),
+                                            sourceModule->getContext());
+
+    module->setDataLayout(sourceModule->getDataLayout());
+    ValueToValueMapTy valueMap;
+
+    for (auto &global: sourceModule->getGlobalList()) {
+      GlobalVariable *gv = orc::cloneGlobalVariableDecl(*module.get(), global);
+      if (global.hasInitializer()) {
+        gv->setInitializer(global.getInitializer());
+      }
+    }
+
+    for (auto &alias: sourceModule->getAliasList()) {
+      orc::cloneGlobalAliasDecl(*module.get(), alias, valueMap);
+    }
+
+    cloneModuleFlagsMetadata(*module.get(), *sourceModule, valueMap);
+
+    orc::cloneFunctionDecl(*module.get(), *function, &valueMap);
+    orc::moveFunctionBody(*function, valueMap);
+
+    extractedModules.push_back(std::move(module));
+  }
+
+//  exit(144);
+
+  for (auto &ownedModule : context.getModules()) {
+    MullModule &module = *ownedModule.get();
+
+    metrics.beginCompileOriginalModule(module.getModule());
+    auto objectFile = toolchain.cache().getObject(module);
+    if (objectFile.getBinary() == nullptr) {
+      LLVMContext localContext;
+      auto clonedModule = module.clone(localContext);
+      objectFile = toolchain.compiler().compileModule(*clonedModule.get());
+      toolchain.cache().putObject(objectFile, module);
+    }
+
+    innerCache.insert(std::make_pair(module.getModule(), objectFile.getBinary()));
+    ownedObjectFiles.push_back(std::move(objectFile));
+    metrics.endCompileOriginalModule(module.getModule());
+  }
+
   std::vector<std::unique_ptr<MutationResult>> mutationResults;
 
   const auto mutationsCount = mutationPoints.size();
   auto mutantIndex = 1;
 
+  auto objectFilesWithMutant = AllObjectFiles();
+  vector<OwningBinary<ObjectFile>> ownedObjects;
+  for (auto &module : extractedModules) {
+    auto objectFile = toolchain.compiler().compileModule(module.get());
+    objectFilesWithMutant.push_back(objectFile.getBinary());
+    ownedObjects.push_back(std::move(objectFile));
+  }
+
+//  metrics.beginLoadMutatedProgram(mutationPoint);
+  runner.loadProgram(objectFilesWithMutant);
+//  metrics.endLoadMutatedProgram(mutationPoint);
+
   for (auto mutationPoint : mutationPoints) {
-    auto objectFilesWithMutant = AllButOne(mutationPoint->getOriginalModule()->getModule());
+//    auto objectFilesWithMutant = AllButOne(mutationPoint->getOriginalModule()->getModule());
 
     Logger::debug() << "[" << mutantIndex++ << "/" << mutationsCount << "]: "  << mutationPoint->getUniqueIdentifier() << "\n";
 
     metrics.beginCompileMutant(mutationPoint);
-    auto mutant = toolchain.cache().getObject(*mutationPoint);
-    if (mutant.getBinary() == nullptr) {
-      LLVMContext localContext;
-      auto clonedModule = mutationPoint->getOriginalModule()->clone(localContext);
-      mutationPoint->applyMutation(*clonedModule.get());
-      mutant = toolchain.compiler().compileModule(*clonedModule.get());
-      toolchain.cache().putObject(mutant, *mutationPoint);
-    }
+//    auto mutant = toolchain.cache().getObject(*mutationPoint);
+//    if (mutant.getBinary() == nullptr) {
+//      LLVMContext localContext;
+//      auto clonedModule = mutationPoint->getOriginalModule()->clone(localContext);
+//      mutationPoint->applyMutation(*clonedModule.get());
+//      mutant = toolchain.compiler().compileModule(*clonedModule.get());
+//      toolchain.cache().putObject(mutant, *mutationPoint);
+//    }
     metrics.endCompileMutant(mutationPoint);
 
-    objectFilesWithMutant.push_back(mutant.getBinary());
+//    objectFilesWithMutant.push_back(mutant.getBinary());
 
-    metrics.beginLoadMutatedProgram(mutationPoint);
-    runner.loadProgram(objectFilesWithMutant);
-    metrics.endLoadMutatedProgram(mutationPoint);
+//    metrics.beginLoadMutatedProgram(mutationPoint);
+//    runner.loadProgram(objectFilesWithMutant);
+//    metrics.endLoadMutatedProgram(mutationPoint);
 
     auto testsCount = mutationPoint->getReachableTests().size();
     auto testIndex = 1;
@@ -326,10 +406,25 @@ std::vector<std::unique_ptr<MutationResult>> Driver::runMutations(const std::vec
 
     diagnostics->report(mutationPoint, atLeastOneTestFailed);
 
-    objectFilesWithMutant.pop_back();
+//    objectFilesWithMutant.pop_back();
+//    exit(154);
   }
 
   return mutationResults;
+}
+
+std::vector<llvm::object::ObjectFile *> Driver::AllObjectFiles() {
+  std::vector<llvm::object::ObjectFile *> Objects;
+
+  for (auto &CachedEntry : innerCache) {
+      Objects.push_back(CachedEntry.second);
+  }
+
+  for (OwningBinary<ObjectFile> &object: precompiledObjectFiles) {
+    Objects.push_back(object.getBinary());
+  }
+
+  return Objects;
 }
 
 std::vector<llvm::object::ObjectFile *> Driver::AllButOne(llvm::Module *One) {
