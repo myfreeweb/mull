@@ -4,6 +4,7 @@
 #include "Toolchain/Resolvers/InstrumentationResolver.h"
 #include "Toolchain/Resolvers/NativeResolver.h"
 #include "Mangler.h"
+#include "LLVMCompatibility.h"
 
 #include <llvm/ExecutionEngine/SectionMemoryManager.h>
 
@@ -29,7 +30,7 @@ SimpleTestRunner::~SimpleTestRunner() {
 }
 
 void *SimpleTestRunner::TestFunctionPointer(const llvm::Function &Function) {
-  orc::JITSymbol Symbol = ObjectLayer.findSymbol(mangler.getNameWithPrefix(Function.getName()), true);
+  llvm_compat::ORCJITSymbol Symbol = ObjectLayer.findSymbol(mangler.getNameWithPrefix(Function.getName()), true);
   void *FPointer = reinterpret_cast<void *>(static_cast<uintptr_t>(Symbol.getAddress()));
   assert(FPointer && "Can't find pointer to function");
   return FPointer;

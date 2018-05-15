@@ -9,7 +9,7 @@ using namespace llvm;
 NativeResolver::NativeResolver(llvm::orc::LocalCXXRuntimeOverrides &overrides)
 : overrides(overrides) {}
 
-llvm::RuntimeDyld::SymbolInfo NativeResolver::findSymbol(const std::string &name) {
+llvm_compat::ORCSymbolInfo NativeResolver::findSymbol(const std::string &name) {
   /// Overrides should go first, otherwise functions of the host process
   /// will take over and crash the system later
   if (auto symbol = overrides.searchOverrides(name)) {
@@ -17,12 +17,12 @@ llvm::RuntimeDyld::SymbolInfo NativeResolver::findSymbol(const std::string &name
   }
 
   if (auto address = RTDyldMemoryManager::getSymbolAddressInProcess(name)) {
-    return RuntimeDyld::SymbolInfo(address, JITSymbolFlags::Exported);
+    return llvm_compat::ORCSymbolInfo(address, JITSymbolFlags::Exported);
   }
 
-  return RuntimeDyld::SymbolInfo(nullptr);
+  return llvm_compat::ORCSymbolInfo(nullptr);
 }
 
-llvm::RuntimeDyld::SymbolInfo NativeResolver::findSymbolInLogicalDylib(const std::string &name) {
-  return RuntimeDyld::SymbolInfo(nullptr);
+llvm_compat::ORCSymbolInfo NativeResolver::findSymbolInLogicalDylib(const std::string &name) {
+  return llvm_compat::ORCSymbolInfo(nullptr);
 }
