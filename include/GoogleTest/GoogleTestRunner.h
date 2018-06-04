@@ -9,6 +9,7 @@
 #include <llvm/Object/Binary.h>
 #include <llvm/Object/ObjectFile.h>
 #include <llvm/Target/TargetMachine.h>
+#include <Toolchain/Resolvers/NativeResolver.h>
 
 namespace llvm {
 
@@ -20,6 +21,16 @@ namespace mull {
 
 struct InstrumentationInfo;
 
+class Machine {
+  std::vector<llvm::object::ObjectFile *> objectFiles;
+  llvm::SectionMemoryManager memoryManager;
+  llvm::StringMap<llvm_compat::ORCSymbolInfo> symbolTable;
+public:
+  void addObjectFiles(std::vector<llvm::object::ObjectFile *> &files,
+                      llvm_compat::ORCResolver &resolver);
+  llvm_compat::ORCJITSymbol getSymbol(llvm::StringRef name);
+};
+
 class GoogleTestRunner : public TestRunner {
   llvm::orc::ObjectLinkingLayer<> ObjectLayer;
   Mangler mangler;
@@ -30,6 +41,7 @@ class GoogleTestRunner : public TestRunner {
   std::string fGoogleTestRun;
   llvm::orc::ObjectLinkingLayer<>::ObjSetHandleT handle;
   InstrumentationInfo **trampoline;
+  Machine machine;
 public:
 
   GoogleTestRunner(llvm::TargetMachine &machine);

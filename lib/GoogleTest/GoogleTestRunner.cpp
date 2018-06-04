@@ -43,7 +43,8 @@ void *GoogleTestRunner::GetCtorPointer(const llvm::Function &Function) {
 }
 
 void *GoogleTestRunner::getFunctionPointer(const std::string &functionName) {
-  JITSymbol symbol = ObjectLayer.findSymbol(functionName, false);
+  //  JITSymbol symbol = ObjectLayer.findSymbol(functionName, false);
+  JITSymbol symbol = machine.getSymbol(functionName);
 
   void *fpointer =
     reinterpret_cast<void *>(static_cast<uintptr_t>(symbol.getAddress()));
@@ -68,28 +69,35 @@ void GoogleTestRunner::runStaticCtor(llvm::Function *Ctor) {
 
 void GoogleTestRunner::loadInstrumentedProgram(ObjectFiles &objectFiles,
                                                Instrumentation &instrumentation) {
-  if (handle != MullGTEstDummyHandle) {
-    ObjectLayer.removeObjectSet(handle);
-  }
-
-  handle = ObjectLayer.addObjectSet(objectFiles,
-                                    make_unique<SectionMemoryManager>(),
-                                    make_unique<InstrumentationResolver>(overrides,
-                                                                         instrumentation,
-                                                                         mangler,
-                                                                         trampoline));
-  ObjectLayer.emitAndFinalize(handle);
+//  machine.addObjectFiles(objectFiles);
+//
+//  if (handle != MullGTEstDummyHandle) {
+//    ObjectLayer.removeObjectSet(handle);
+//  }
+//
+//  handle = ObjectLayer.addObjectSet(objectFiles,
+//                                    make_unique<SectionMemoryManager>(),
+//                                    make_unique<InstrumentationResolver>(overrides,
+//                                                                         instrumentation,
+//                                                                         mangler,
+//                                                                         trampoline));
+  InstrumentationResolver resolver(overrides, instrumentation, mangler, trampoline);
+//  ObjectLayer.emitAndFinalize(handle);
+  machine.addObjectFiles(objectFiles, resolver);
 }
 
 void GoogleTestRunner::loadProgram(ObjectFiles &objectFiles) {
-  if (handle != MullGTEstDummyHandle) {
-    ObjectLayer.removeObjectSet(handle);
-  }
+//  if (handle != MullGTEstDummyHandle) {
+//    ObjectLayer.removeObjectSet(handle);
+//  }
+//
+//  handle = ObjectLayer.addObjectSet(objectFiles,
+//                                    make_unique<SectionMemoryManager>(),
+//                                    make_unique<NativeResolver>(overrides));
+//  ObjectLayer.emitAndFinalize(handle);
 
-  handle = ObjectLayer.addObjectSet(objectFiles,
-                                    make_unique<SectionMemoryManager>(),
-                                    make_unique<NativeResolver>(overrides));
-  ObjectLayer.emitAndFinalize(handle);
+  NativeResolver resolver(overrides);
+  machine.addObjectFiles(objectFiles, resolver);
 }
 
 ExecutionStatus GoogleTestRunner::runTest(Test *test) {
@@ -143,3 +151,123 @@ ExecutionStatus GoogleTestRunner::runTest(Test *test) {
   }
   return ExecutionStatus::Failed;
 }
+
+void Machine::addObjectFiles(std::vector<llvm::object::ObjectFile *> &files,
+                             llvm_compat::ORCResolver &resolver) {
+  std::vector<llvm::object::ObjectFile *>().swap(objectFiles);
+  llvm::StringMap<llvm_compat::ORCSymbolInfo>().swap(symbolTable);
+
+  for (auto object : files) {
+    objectFiles.push_back(object);
+
+    for (auto symbol : object->symbols()) {
+      if (symbol.getFlags() & object::SymbolRef::SF_Undefined) {
+        continue;
+      }
+
+      Expected<StringRef> name = symbol.getName();
+      if (!name) {
+        consumeError(name.takeError());
+        continue;
+      }
+
+      auto flags = llvm_compat::JITSymbolFlagsFromObjectSymbol(symbol);
+      symbolTable.insert(std::make_pair(name.get(), llvm_compat::ORCJITSymbol(0, flags)));
+    }
+
+  }
+
+  RuntimeDyld dynamicLoader(memoryManager, resolver);
+  dynamicLoader.setProcessAllSections(false);
+
+  for (auto &object : objectFiles) {
+    dynamicLoader.loadObject(*object);
+  }
+
+  for (auto &entry : symbolTable) {
+    entry.second = dynamicLoader.getSymbol(entry.first());
+  }
+
+  dynamicLoader.finalizeWithMemoryManagerLocking();
+
+//  void buildInitialSymbolTable(const ObjSetT &Objects) {
+//    for (const auto &Obj : Objects)
+//      for (auto &Symbol : getObject(*Obj).symbols()) {
+//        if (Symbol.getFlags() & object::SymbolRef::SF_Undefined)
+//          continue;
+//        Expected<StringRef> SymbolName = Symbol.getName();
+//        // FIXME: Raise an error for bad symbols.
+//        if (!SymbolName) {
+//          consumeError(SymbolName.takeError());
+//          continue;
+//        }
+//        auto Flags = JITSymbol::flagsFromObjectSymbol(Symbol);
+//        SymbolTable.insert(
+//            std::make_pair(*SymbolName, RuntimeDyld::SymbolInfo(0, Flags)));
+//      }
+//  }
+
+}
+
+
+llvm_compat::ORCJITSymbol Machine::getSymbol(StringRef name) {
+  return symbolTable.find(name)->second;
+}
+
+//void Machine::finalize() {
+//  RuntimeDyld dynamicLoader(memoryManager, resolver);
+//  dynamicLoader.setProcessAllSections(false);
+//
+//  for (auto &object : objectFiles) {
+//    dynamicLoader.loadObject(*object);
+//  }
+//
+//  for (auto &entry : symbolTable) {
+//    entry.second = dynamicLoader.getSymbol(entry.first());
+//  }
+//
+//  dynamicLoader.finalizeWithMemoryManagerLocking();
+//
+//  //  auto Finalizer = [&](ObjSetHandleT H, RuntimeDyld &RTDyld,
+////                       const ObjSetT &Objs,
+////                       std::function<void()> LOSHandleLoad) {
+////    LoadedObjInfoList LoadedObjInfos;
+////
+////    for (auto &Obj : Objs)
+////      LoadedObjInfos.push_back(RTDyld.loadObject(this->getObject(*Obj)));
+////
+////    LOSHandleLoad();
+////
+////    this->NotifyLoaded(H, Objs, LoadedObjInfos);
+////
+////    RTDyld.finalizeWithMemoryManagerLocking();
+////
+////    if (this->NotifyFinalized)
+////      this->NotifyFinalized(H);
+////  };;
+//
+////  RuntimeDyld RTDyld(*MemMgr, *PFC->Resolver);
+////  RTDyld.setProcessAllSections(PFC->ProcessAllSections);
+////  PFC->RTDyld = &RTDyld;
+////
+////  PFC->Finalizer(PFC->Handle, RTDyld, std::move(PFC->Objects),
+////                 [&]() {
+////                   this->updateSymbolTable(RTDyld);
+////                   this->Finalized = true;
+////                 });
+//
+////  void updateSymbolTable(const RuntimeDyld &RTDyld) {
+////    for (auto &SymEntry : SymbolTable)
+////      SymEntry.second = RTDyld.getSymbol(SymEntry.first());
+////  }
+//
+//}
+//
+//Machine::Machine(TargetMachine &tm) :
+//    mangler(Mangler(tm.createDataLayout())),
+//    overrides([this](const char *name) {
+//      return this->mangler.getNameWithPrefix(name);
+//    }),
+//    resolver(overrides)
+//{
+//}
