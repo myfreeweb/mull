@@ -85,7 +85,7 @@ ninja.run.example: ninja.build.example ## Run example on macOS
 
 
 ninja.clean:
-	rm -rfv $(BUILD_DIR_NINJA)
+	rm -rf $(BUILD_DIR_NINJA)
 
 $(BUILD_DIR_NINJA):
 	mkdir $(BUILD_DIR_NINJA)
@@ -145,7 +145,7 @@ xcode.kill-and-reopen: ## Kill Xcode and open Mull.xcodeproj in Xcode.
 	open $(BUILD_DIR_XCODE)/Mull.xcodeproj
 
 xcode.clean: ## Delete Xcode CMake build cache.
-	rm -rfv $(BUILD_DIR_XCODE)
+	rm -rf $(BUILD_DIR_XCODE)
 
 $(BUILD_DIR_XCODE):
 	mkdir $(BUILD_DIR_XCODE)

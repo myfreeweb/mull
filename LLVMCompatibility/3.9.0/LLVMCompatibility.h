@@ -11,5 +11,4 @@ namespace llvm_compat {
   typedef orc::JITSymbol ORCJITSymbol;
 
   JITSymbolFlags JITSymbolFlagsFromObjectSymbol(const object::BasicSymbolRef &symbol);
-
 }

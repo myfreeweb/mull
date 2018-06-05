@@ -1,9 +1,12 @@
 #include "LLVMCompatibility.h"
 
-using namespace llvm_compat;
 using namespace llvm;
 
+namespace llvm_compat {
+
 JITSymbolFlags JITSymbolFlagsFromObjectSymbol(const object::BasicSymbolRef &symbol) {
-  return JITSymbol::flagsFromObjectSymbol(symbol);
+  return orc::JITSymbol::flagsFromObjectSymbol(symbol);
+}
+
 }
 

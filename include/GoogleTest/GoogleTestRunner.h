@@ -24,7 +24,7 @@ struct InstrumentationInfo;
 class Machine {
   std::vector<llvm::object::ObjectFile *> objectFiles;
   llvm::SectionMemoryManager memoryManager;
-  llvm::StringMap<llvm_compat::ORCSymbolInfo> symbolTable;
+  llvm::StringMap<llvm_compat::ORCJITSymbol> symbolTable;
 public:
   void addObjectFiles(std::vector<llvm::object::ObjectFile *> &files,
                       llvm_compat::ORCResolver &resolver);
