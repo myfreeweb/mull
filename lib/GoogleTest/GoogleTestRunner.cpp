@@ -6,6 +6,8 @@
 #include "Toolchain/Resolvers/InstrumentationResolver.h"
 #include "Toolchain/Resolvers/NativeResolver.h"
 
+#include "LLVMCompatibility.h"
+
 #include <llvm/IR/Function.h>
 #include <llvm/ExecutionEngine/SectionMemoryManager.h>
 
@@ -17,7 +19,7 @@ namespace {
   class UnitTest;
 }
 
-static llvm::orc::ObjectLinkingLayer<>::ObjSetHandleT MullGTEstDummyHandle;
+//static llvm::orc::ObjectLinkingLayer<>::ObjSetHandleT MullGTEstDummyHandle;
 
 GoogleTestRunner::GoogleTestRunner(llvm::TargetMachine &machine) :
   TestRunner(machine),
@@ -28,7 +30,7 @@ GoogleTestRunner::GoogleTestRunner(llvm::TargetMachine &machine) :
   fGoogleTestInit(mangler.getNameWithPrefix("_ZN7testing14InitGoogleTestEPiPPc")),
   fGoogleTestInstance(mangler.getNameWithPrefix("_ZN7testing8UnitTest11GetInstanceEv")),
   fGoogleTestRun(mangler.getNameWithPrefix("_ZN7testing8UnitTest3RunEv")),
-  handle(MullGTEstDummyHandle),
+//  handle(MullGTEstDummyHandle),
   trampoline(new InstrumentationInfo*)
 {
 }
@@ -44,10 +46,10 @@ void *GoogleTestRunner::GetCtorPointer(const llvm::Function &Function) {
 
 void *GoogleTestRunner::getFunctionPointer(const std::string &functionName) {
   //  JITSymbol symbol = ObjectLayer.findSymbol(functionName, false);
-  JITSymbol symbol = machine.getSymbol(functionName);
+  JITSymbol &symbol = machine.getSymbol(functionName);
 
   void *fpointer =
-    reinterpret_cast<void *>(static_cast<uintptr_t>(symbol.getAddress()));
+    reinterpret_cast<void *>(static_cast<uintptr_t>(llvm_compat::JITSymbolAddress(symbol)));
 
   if (fpointer == nullptr) {
     errs() << "GoogleTestRunner> Can't find pointer to function: "
@@ -210,7 +212,7 @@ void Machine::addObjectFiles(std::vector<llvm::object::ObjectFile *> &files,
 }
 
 
-llvm_compat::ORCJITSymbol Machine::getSymbol(StringRef name) {
+llvm_compat::ORCJITSymbol &Machine::getSymbol(StringRef name) {
   return symbolTable.find(name)->second;
 }
 

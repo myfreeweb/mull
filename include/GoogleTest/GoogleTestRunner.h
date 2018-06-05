@@ -5,7 +5,7 @@
 #include "Mangler.h"
 
 #include <llvm/ExecutionEngine/Orc/ExecutionUtils.h>
-#include <llvm/ExecutionEngine/Orc/ObjectLinkingLayer.h>
+//#include <llvm/ExecutionEngine/Orc/ObjectLinkingLayer.h>
 #include <llvm/Object/Binary.h>
 #include <llvm/Object/ObjectFile.h>
 #include <llvm/Target/TargetMachine.h>
@@ -28,18 +28,18 @@ class Machine {
 public:
   void addObjectFiles(std::vector<llvm::object::ObjectFile *> &files,
                       llvm_compat::ORCResolver &resolver);
-  llvm_compat::ORCJITSymbol getSymbol(llvm::StringRef name);
+  llvm_compat::ORCJITSymbol &getSymbol(llvm::StringRef name);
 };
 
 class GoogleTestRunner : public TestRunner {
-  llvm::orc::ObjectLinkingLayer<> ObjectLayer;
+//  llvm::orc::ObjectLinkingLayer<> ObjectLayer;
   Mangler mangler;
   llvm::orc::LocalCXXRuntimeOverrides overrides;
 
   std::string fGoogleTestInit;
   std::string fGoogleTestInstance;
   std::string fGoogleTestRun;
-  llvm::orc::ObjectLinkingLayer<>::ObjSetHandleT handle;
+//  llvm::orc::ObjectLinkingLayer<>::ObjSetHandleT handle;
   InstrumentationInfo **trampoline;
   Machine machine;
 public:

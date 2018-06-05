@@ -13,11 +13,11 @@
 using namespace mull;
 using namespace llvm;
 
-static llvm::orc::ObjectLinkingLayer<>::ObjSetHandleT MullSimpleTestDummyHandle;
+//static llvm::orc::ObjectLinkingLayer<>::ObjSetHandleT MullSimpleTestDummyHandle;
 
 SimpleTestRunner::SimpleTestRunner(TargetMachine &machine)
   : TestRunner(machine),
-    handle(MullSimpleTestDummyHandle),
+//    handle(MullSimpleTestDummyHandle),
     mangler(Mangler(machine.createDataLayout())),
     overrides([this](const char *name) {
       return this->mangler.getNameWithPrefix(name);
@@ -30,35 +30,36 @@ SimpleTestRunner::~SimpleTestRunner() {
 }
 
 void *SimpleTestRunner::TestFunctionPointer(const llvm::Function &Function) {
-  llvm_compat::ORCJITSymbol Symbol = ObjectLayer.findSymbol(mangler.getNameWithPrefix(Function.getName()), true);
-  void *FPointer = reinterpret_cast<void *>(static_cast<uintptr_t>(Symbol.getAddress()));
-  assert(FPointer && "Can't find pointer to function");
-  return FPointer;
+  return nullptr;
+//  llvm_compat::ORCJITSymbol Symbol = ObjectLayer.findSymbol(mangler.getNameWithPrefix(Function.getName()), true);
+//  void *FPointer = reinterpret_cast<void *>(static_cast<uintptr_t>(Symbol.getAddress()));
+//  assert(FPointer && "Can't find pointer to function");
+//  return FPointer;
 }
 
 void SimpleTestRunner::loadInstrumentedProgram(ObjectFiles &objectFiles,
                                                Instrumentation &instrumentation) {
-  if (handle != MullSimpleTestDummyHandle) {
-    ObjectLayer.removeObjectSet(handle);
-  }
-
-  handle = ObjectLayer.addObjectSet(objectFiles,
-                                    make_unique<SectionMemoryManager>(),
-                                    make_unique<InstrumentationResolver>(overrides,
-                                                                         instrumentation,
-                                                                         mangler,
-                                                                         trampoline));
-  ObjectLayer.emitAndFinalize(handle);
+//  if (handle != MullSimpleTestDummyHandle) {
+//    ObjectLayer.removeObjectSet(handle);
+//  }
+//
+//  handle = ObjectLayer.addObjectSet(objectFiles,
+//                                    make_unique<SectionMemoryManager>(),
+//                                    make_unique<InstrumentationResolver>(overrides,
+//                                                                         instrumentation,
+//                                                                         mangler,
+//                                                                         trampoline));
+//  ObjectLayer.emitAndFinalize(handle);
 }
 
 void SimpleTestRunner::loadProgram(ObjectFiles &objectFiles) {
-  if (handle != MullSimpleTestDummyHandle) {
-    ObjectLayer.removeObjectSet(handle);
-  }
-  handle = ObjectLayer.addObjectSet(objectFiles,
-                                    make_unique<SectionMemoryManager>(),
-                                    make_unique<NativeResolver>(overrides));
-  ObjectLayer.emitAndFinalize(handle);
+//  if (handle != MullSimpleTestDummyHandle) {
+//    ObjectLayer.removeObjectSet(handle);
+//  }
+//  handle = ObjectLayer.addObjectSet(objectFiles,
+//                                    make_unique<SectionMemoryManager>(),
+//                                    make_unique<NativeResolver>(overrides));
+//  ObjectLayer.emitAndFinalize(handle);
 }
 
 ExecutionStatus SimpleTestRunner::runTest(Test *test) {

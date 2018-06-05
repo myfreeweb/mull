@@ -4,7 +4,8 @@
 #include "Mangler.h"
 
 #include <llvm/ExecutionEngine/Orc/ExecutionUtils.h>
-#include <llvm/ExecutionEngine/Orc/ObjectLinkingLayer.h>
+//#include <llvm/ExecutionEngine/Orc/ObjectLinkingLayer.h>
+#include <llvm/ExecutionEngine/Orc/RTDyldObjectLinkingLayer.h>
 
 namespace llvm {
 
@@ -19,8 +20,8 @@ class Test;
 struct InstrumentationInfo;
 
 class SimpleTestRunner : public TestRunner {
-  llvm::orc::ObjectLinkingLayer<> ObjectLayer;
-  llvm::orc::ObjectLinkingLayer<>::ObjSetHandleT handle;
+//  llvm::orc::ObjectLinkingLayer ObjectLayer;
+//  llvm::orc::ObjectLinkingLayer::ObjSetHandleT handle;
   Mangler mangler;
   llvm::orc::LocalCXXRuntimeOverrides overrides;
   InstrumentationInfo **trampoline;

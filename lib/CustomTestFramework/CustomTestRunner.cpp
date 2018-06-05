@@ -10,7 +10,7 @@ using namespace mull;
 using namespace llvm;
 using namespace llvm::orc;
 
-static llvm::orc::ObjectLinkingLayer<>::ObjSetHandleT MullCustomTestDummyHandle;
+//static llvm::orc::ObjectLinkingLayer<>::ObjSetHandleT MullCustomTestDummyHandle;
 
 CustomTestRunner::CustomTestRunner(llvm::TargetMachine &machine) :
   TestRunner(machine),
@@ -18,7 +18,7 @@ CustomTestRunner::CustomTestRunner(llvm::TargetMachine &machine) :
   overrides([this](const char *name) {
     return this->mangler.getNameWithPrefix(name);
   }),
-  handle(MullCustomTestDummyHandle),
+//  handle(MullCustomTestDummyHandle),
   trampoline(new InstrumentationInfo*)
 {
 }
@@ -32,18 +32,19 @@ void *CustomTestRunner::GetCtorPointer(const llvm::Function &Function) {
 }
 
 void *CustomTestRunner::getFunctionPointer(const std::string &functionName) {
-  JITSymbol symbol = ObjectLayer.findSymbol(functionName, false);
-
-  void *fpointer =
-    reinterpret_cast<void *>(static_cast<uintptr_t>(symbol.getAddress()));
-
-  if (fpointer == nullptr) {
-    errs() << "CustomTestRunner> Can't find pointer to function: "
-    << functionName << "\n";
-    exit(1);
-  }
-
-  return fpointer;
+  return nullptr;
+//  JITSymbol symbol = ObjectLayer.findSymbol(functionName, false);
+//
+//  void *fpointer =
+//    reinterpret_cast<void *>(static_cast<uintptr_t>(symbol.getAddress()));
+//
+//  if (fpointer == nullptr) {
+//    errs() << "CustomTestRunner> Can't find pointer to function: "
+//    << functionName << "\n";
+//    exit(1);
+//  }
+//
+//  return fpointer;
 }
 
 void CustomTestRunner::runStaticCtor(llvm::Function *Ctor) {
@@ -57,28 +58,28 @@ void CustomTestRunner::runStaticCtor(llvm::Function *Ctor) {
 
 void CustomTestRunner::loadInstrumentedProgram(ObjectFiles &objectFiles,
                                                Instrumentation &instrumentation) {
-  if (handle != MullCustomTestDummyHandle) {
-    ObjectLayer.removeObjectSet(handle);
-  }
-
-  handle = ObjectLayer.addObjectSet(objectFiles,
-                                    make_unique<SectionMemoryManager>(),
-                                    make_unique<InstrumentationResolver>(overrides,
-                                                                         instrumentation,
-                                                                         mangler,
-                                                                         trampoline));
-  ObjectLayer.emitAndFinalize(handle);
+//  if (handle != MullCustomTestDummyHandle) {
+//    ObjectLayer.removeObjectSet(handle);
+//  }
+//
+//  handle = ObjectLayer.addObjectSet(objectFiles,
+//                                    make_unique<SectionMemoryManager>(),
+//                                    make_unique<InstrumentationResolver>(overrides,
+//                                                                         instrumentation,
+//                                                                         mangler,
+//                                                                         trampoline));
+//  ObjectLayer.emitAndFinalize(handle);
 }
 
 void CustomTestRunner::loadProgram(ObjectFiles &objectFiles) {
-  if (handle != MullCustomTestDummyHandle) {
-    ObjectLayer.removeObjectSet(handle);
-  }
-
-  handle = ObjectLayer.addObjectSet(objectFiles,
-                                    make_unique<SectionMemoryManager>(),
-                                    make_unique<NativeResolver>(overrides));
-  ObjectLayer.emitAndFinalize(handle);
+//  if (handle != MullCustomTestDummyHandle) {
+//    ObjectLayer.removeObjectSet(handle);
+//  }
+//
+//  handle = ObjectLayer.addObjectSet(objectFiles,
+//                                    make_unique<SectionMemoryManager>(),
+//                                    make_unique<NativeResolver>(overrides));
+//  ObjectLayer.emitAndFinalize(handle);
 }
 
 ExecutionStatus CustomTestRunner::runTest(Test *test) {
