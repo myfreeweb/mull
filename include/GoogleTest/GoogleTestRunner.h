@@ -5,7 +5,7 @@
 #include "Mangler.h"
 
 #include <llvm/ExecutionEngine/Orc/ExecutionUtils.h>
-//#include <llvm/ExecutionEngine/Orc/ObjectLinkingLayer.h>
+#include <llvm/ExecutionEngine/SectionMemoryManager.h>
 #include <llvm/Object/Binary.h>
 #include <llvm/Object/ObjectFile.h>
 #include <llvm/Target/TargetMachine.h>
