@@ -31,6 +31,21 @@ void JITEngine::addObjectFiles(std::vector<object::ObjectFile *> &files,
       symbolTable.insert(std::make_pair(name.get(), llvm_compat::JITSymbol(0, flags)));
     }
 
+    for (auto section : object->sections()) {
+      llvm::StringRef name;
+      section.getName(name);
+      if (name == "__StaticInit" || name == "__mod_init_func") {
+        StringRef content;
+        auto err = section.getContents(content);
+        if (!err) {
+          errs() << content << "\n---\n";
+        }
+      } else {
+        errs() << name << "\n";
+      }
+
+    }
+
   }
 
   RuntimeDyld dynamicLoader(*memoryManager, resolver);
