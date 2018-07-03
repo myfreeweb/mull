@@ -33,9 +33,8 @@ TEST(ScalarValueMutator, getMutationPoint) {
   MutationsFinder finder(std::move(mutators));
   Filter filter;
 
-  std::vector<MutationPoint *> mutationPoints = finder.getMutationPoints(mullContext,
-                                                                         testee,
-                                                                         filter);
+  finder.recordMutationPoints(mullContext, testee, filter);
+  auto mutationPoints = finder.getAllMutationPoints();
 
   ASSERT_EQ(mutationPoints.size(), 4U);
 

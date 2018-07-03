@@ -93,7 +93,8 @@ TEST(NegateConditionMutator, getMutationPoints_no_filter) {
   MutationsFinder finder(std::move(mutators));
   Filter filter;
 
-  auto mutationPoints = finder.getMutationPoints(context, testee, filter);
+  finder.recordMutationPoints(context, testee, filter);
+  auto mutationPoints = finder.getAllMutationPoints();
   EXPECT_EQ(1U, mutationPoints.size());
   EXPECT_EQ(0, mutationPoints[0]->getAddress().getFnIndex());
   EXPECT_EQ(0, mutationPoints[0]->getAddress().getBBIndex());
@@ -118,7 +119,8 @@ TEST(NegateConditionMutator, getMutationPoints_filter_to_bool_converion) {
   MutationsFinder finder(std::move(mutators));
   Filter filter;
 
-  auto mutationPoints = finder.getMutationPoints(context, testee, filter);
+  finder.recordMutationPoints(context, testee, filter);
+  auto mutationPoints = finder.getAllMutationPoints();
   EXPECT_EQ(0U, mutationPoints.size());
 }
 
@@ -140,6 +142,7 @@ TEST(NegateConditionMutator, getMutationPoints_filter_is_null) {
   MutationsFinder finder(std::move(mutators));
   Filter filter;
 
-  auto mutationPoints = finder.getMutationPoints(context, testee, filter);
+  finder.recordMutationPoints(context, testee, filter);
+  auto mutationPoints = finder.getAllMutationPoints();
   EXPECT_EQ(0U, mutationPoints.size());
 }

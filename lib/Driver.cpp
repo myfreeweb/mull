@@ -155,7 +155,6 @@ Driver::findMutationPoints(std::vector<std::unique_ptr<Test>> &tests) {
 
   Logger::debug() << "Running tests and searching mutations\n";
 
-  std::vector<MutationPoint *> mutationPoints;
   auto objectFiles = AllInstrumentedObjectFiles();
 
   metrics.beginLoadOriginalProgram();
@@ -199,8 +198,7 @@ Driver::findMutationPoints(std::vector<std::unique_ptr<Test>> &tests) {
 
       std::unique_ptr<Testee> &testee = *testee_it;
 
-      auto points = mutationsFinder.getMutationPoints(context, *testee.get(), filter);
-      std::copy(points.begin(), points.end(), std::back_inserter(mutationPoints));
+      mutationsFinder.recordMutationPoints(context, *testee.get(), filter);
     }
 
     metrics.endFindMutationsForTest(test.get());
@@ -210,6 +208,8 @@ Driver::findMutationPoints(std::vector<std::unique_ptr<Test>> &tests) {
     /// Cleans up the memory allocated for the vector itself as well
     std::vector<OwningBinary<ObjectFile>>().swap(instrumentedObjectFiles);
   }
+
+  std::vector<MutationPoint *> mutationPoints(mutationsFinder.getAllMutationPoints());
 
   Logger::debug() << "Found " << mutationPoints.size() << " mutations\n";
 

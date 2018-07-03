@@ -87,10 +87,10 @@ TEST(SimpleTestRunner, runTest) {
   Function *testeeFunction = Ctx.lookupDefinedFunction("count_letters");
   Testee testee(testeeFunction, Test.get(), 1);
 
-  std::vector<MutationPoint *> MutationPoints =
-    mutationsFinder.getMutationPoints(Ctx, testee, filter);
+  mutationsFinder.recordMutationPoints(Ctx, testee, filter);
+  auto mutationPoints = mutationsFinder.getAllMutationPoints();
 
-  MutationPoint *MP = (*(MutationPoints.begin()));
+  MutationPoint *MP = (*(mutationPoints.begin()));
 
   LLVMContext localContext;
   auto ownedMutatedTesteeModule = MP->getOriginalModule()->clone(localContext);

@@ -33,14 +33,11 @@ TEST(CXXJunkDetector, boundary_mutator) {
   MutationsFinder finder(std::move(mutatorss));
   Filter filter;
 
-  std::vector<MutationPoint *> allMutationPoints;
-
   for (auto &function : *module) {
     Testee testee(&function, nullptr, 1);
-
-    std::vector<MutationPoint *> points = finder.getMutationPoints(mullContext, testee, filter);
-    std::copy(points.begin(), points.end(), std::back_inserter(allMutationPoints));
+    finder.recordMutationPoints(mullContext, testee, filter);
   }
+  std::vector<MutationPoint *> allMutationPoints(finder.getAllMutationPoints());
 
   ASSERT_EQ(allMutationPoints.size(), 7U);
 
@@ -69,15 +66,14 @@ TEST(CXXJunkDetector, compdb_absolute_paths) {
   MutationsFinder finder(std::move(mutatorss));
   Filter filter;
 
-  std::vector<MutationPoint *> allMutationPoints;
 
   for (auto &function : *module) {
     Testee testee(&function, nullptr, 1);
 
-    std::vector<MutationPoint *> points = finder.getMutationPoints(mullContext, testee, filter);
-    std::copy(points.begin(), points.end(), std::back_inserter(allMutationPoints));
+    finder.recordMutationPoints(mullContext, testee, filter);
   }
 
+  std::vector<MutationPoint *> allMutationPoints(finder.getAllMutationPoints());
   ASSERT_EQ(allMutationPoints.size(), 8U);
 
   JunkDetectionConfig config;
@@ -105,14 +101,14 @@ TEST(CXXJunkDetector, compdb_relative_paths) {
   MutationsFinder finder(std::move(mutatorss));
   Filter filter;
 
-  std::vector<MutationPoint *> allMutationPoints;
 
   for (auto &function : *module) {
     Testee testee(&function, nullptr, 1);
 
-    std::vector<MutationPoint *> points = finder.getMutationPoints(mullContext, testee, filter);
-    std::copy(points.begin(), points.end(), std::back_inserter(allMutationPoints));
+    finder.recordMutationPoints(mullContext, testee, filter);
   }
+
+  std::vector<MutationPoint *> allMutationPoints(finder.getAllMutationPoints());
 
   ASSERT_EQ(allMutationPoints.size(), 8U);
 
@@ -141,14 +137,14 @@ TEST(CXXJunkDetector, no_compdb) {
   MutationsFinder finder(std::move(mutatorss));
   Filter filter;
 
-  std::vector<MutationPoint *> allMutationPoints;
 
   for (auto &function : *module) {
     Testee testee(&function, nullptr, 1);
 
-    std::vector<MutationPoint *> points = finder.getMutationPoints(mullContext, testee, filter);
-    std::copy(points.begin(), points.end(), std::back_inserter(allMutationPoints));
+    finder.recordMutationPoints(mullContext, testee, filter);
   }
+
+  std::vector<MutationPoint *> allMutationPoints(finder.getAllMutationPoints());
 
   ASSERT_EQ(allMutationPoints.size(), 8U);
 

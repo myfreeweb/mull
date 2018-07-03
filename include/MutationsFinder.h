@@ -20,8 +20,7 @@ namespace mull {
     std::map<llvm::Function *, std::vector<std::unique_ptr<MutationPoint>>> cachedPoints;
   public:
     explicit MutationsFinder(std::vector<std::unique_ptr<Mutator>> mutators);
-    std::vector<MutationPoint *> getMutationPoints(const Context &context,
-                                                   Testee &testee,
-                                                   Filter &filter);
+    void recordMutationPoints(const Context &context, Testee &testee, Filter &filter);
+    std::vector<MutationPoint *> getAllMutationPoints();
   };
 }

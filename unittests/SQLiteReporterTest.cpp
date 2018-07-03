@@ -54,7 +54,8 @@ TEST(SQLiteReporter, integrationTest) {
 
   Testee testee(testeeFunction, test.get(), 1);
 
-  std::vector<MutationPoint *> mutationPoints = mutationsFinder.getMutationPoints(context, testee, filter);
+  mutationsFinder.recordMutationPoints(context, testee, filter);
+  auto mutationPoints = mutationsFinder.getAllMutationPoints();
 
   ASSERT_EQ(1U, mutationPoints.size());
 
@@ -411,8 +412,8 @@ TEST(SQLiteReporter, do_emitDebugInfo) {
 
   Testee testee(testeeFunction, test.get(), 1);
 
-  std::vector<MutationPoint *> mutationPoints =
-    mutationsFinder.getMutationPoints(context, testee, filter);
+  mutationsFinder.recordMutationPoints(context, testee, filter);
+  auto mutationPoints = mutationsFinder.getAllMutationPoints();
 
   ASSERT_EQ(1U, mutationPoints.size());
 
@@ -558,8 +559,8 @@ TEST(SQLiteReporter, do_not_emitDebugInfo) {
 
   Testee testee(testeeFunction, test.get(), 1);
 
-  std::vector<MutationPoint *> mutationPoints =
-    mutationsFinder.getMutationPoints(context, testee, filter);
+  mutationsFinder.recordMutationPoints(context, testee, filter);
+  auto mutationPoints = mutationsFinder.getAllMutationPoints();
 
   ASSERT_EQ(1U, mutationPoints.size());
 

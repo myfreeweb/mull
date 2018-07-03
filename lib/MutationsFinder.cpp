@@ -30,11 +30,8 @@ static int GetFunctionIndex(llvm::Function *function) {
 MutationsFinder::MutationsFinder(std::vector<std::unique_ptr<Mutator>> mutators)
 : mutators(std::move(mutators)) {}
 
-std::vector<MutationPoint *> MutationsFinder::getMutationPoints(const Context &context,
-                                                                Testee &testee,
-                                                                Filter &filter) {
+void MutationsFinder::recordMutationPoints(const Context &context, Testee &testee, Filter &filter) {
   std::vector<std::unique_ptr<MutationPoint>> ownedPoints;
-  std::vector<MutationPoint *> mutationPoints;
 
   Function *function = testee.getTesteeFunction();
 
@@ -43,8 +40,7 @@ std::vector<MutationPoint *> MutationsFinder::getMutationPoints(const Context &c
     for (auto &point : points) {
       point->addReachableTest(testee.getTest(), testee.getDistance());
     }
-
-    return mutationPoints;
+    return;
   }
 
   auto moduleID = function->getParent()->getModuleIdentifier();
@@ -69,7 +65,6 @@ std::vector<MutationPoint *> MutationsFinder::getMutationPoints(const Context &c
         MutationPoint *point = mutator->getMutationPoint(module, address, &instruction, location);
         if (point) {
           point->addReachableTest(testee.getTest(), testee.getDistance());
-          mutationPoints.push_back(point);
           ownedPoints.emplace_back(std::unique_ptr<MutationPoint>(point));
         }
         instructionIndex++;
@@ -80,6 +75,16 @@ std::vector<MutationPoint *> MutationsFinder::getMutationPoints(const Context &c
   }
 
   cachedPoints[function] = std::move(ownedPoints);
+}
+
+std::vector<MutationPoint *> MutationsFinder::getAllMutationPoints() {
+  std::vector<MutationPoint *> mutationPoints;
+
+  for (auto &cache : cachedPoints) {
+    for (auto &point : cache.second) {
+      mutationPoints.push_back(point.get());
+    }
+  }
 
   return mutationPoints;
 }
