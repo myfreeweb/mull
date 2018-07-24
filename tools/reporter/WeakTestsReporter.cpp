@@ -102,10 +102,14 @@ static std::set<std::string> fetchKilledMutants(const std::string &reportPath) {
   sqlite3 *database;
   sqlite3_open(reportPath.c_str(), &database);
   const char *query = R"query(
-  select mutation_point_id from execution_result
-  where
-  mutation_point_id <> "" and status <> 2
-  group by mutation_point_id;
+select printf("%s_%s_%d_%d", mp.mutator, mp.filename, mp.line_number, mp.column_number)
+as distinct_mutation_point_id
+from 	execution_result as ex
+join mutation_point as mp
+on ex.mutation_point_id = mp.unique_id
+where ex.mutation_point_id <> "" and ex.status <> 2
+group by distinct_mutation_point_id
+;
 )query";
 
   std::string selectQuery(query);
@@ -148,7 +152,9 @@ readReportFromSQLite(const std::string &reportPath,
     t.unique_id as test_id,
     t.location_file as test_location_file,
     t.location_line as test_location_line,
-    ex.mutation_point_id as mutant_id,
+    printf("%s_%s_%d_%d", mp.mutator, mp.filename, mp.line_number, mp.column_number)
+      as distinct_mutation_point_id,
+    mp.unique_id as mutation_point_id,
     ex.status as status,
     ex.duration as duration,
     mp.mutator as mutator,
@@ -188,6 +194,10 @@ readReportFromSQLite(const std::string &reportPath,
       int32_t testLocationLine = sqlite3_column_int(selectStatement, column++);
       Location testLocation(testLocationFile, testLocationLine, 0);
 
+      std::string distinctMutantId(
+        reinterpret_cast<const char *>(sqlite3_column_text(selectStatement,
+                                                           column++)));
+
       std::string mutantId(
         reinterpret_cast<const char *>(sqlite3_column_text(selectStatement,
                                                            column++)));
@@ -196,7 +206,7 @@ readReportFromSQLite(const std::string &reportPath,
 
       /// Check if the mutant was killed by another test and
       /// override its status
-      if (killedMutants.find(mutantId) != killedMutants.end()) {
+      if (killedMutants.find(distinctMutantId) != killedMutants.end()) {
         mutantStatus = mull::ExecutionStatus::Failed;
       }
       int64_t mutantDuration = sqlite3_column_int64(selectStatement, column++);
@@ -264,9 +274,9 @@ void mull::WeakTestsReporter::showReport(const char *reportPath, int lowerBound,
     }
 
     std::string testLocation = result.getTestLocation().asString();
+    printf("Weak Test: %s %d%%", result.getTestId().c_str(), score);
+    printf(" (%lu/%lu)\n", result.survivedMutantsCount(), result.totalMutantsCount());
     printf("%s:", testLocation.c_str());
-    printf(" %s %d%%", result.getTestId().c_str(), score);
-    printf(" %lu/%lu", result.survivedMutantsCount(), result.totalMutantsCount());
     printf("\n");
 
     if (includeMutants) {
