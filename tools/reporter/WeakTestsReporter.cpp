@@ -267,12 +267,15 @@ void mull::WeakTestsReporter::showReport(const char *reportPath, int lowerBound,
     return a.mutationScore() < b.mutationScore();
   });
 
+  results.erase(std::remove_if(results.begin(),
+                               results.end(),
+                               [&](TestResult &x){ return x.mutationScore() >= lowerBound; }),
+                results.end());
+
+  printf("Identified %lu weak tests\n\n", results.size());
+
   for (auto result : results) {
     auto score = result.mutationScore();
-    if (score > lowerBound) {
-      continue;
-    }
-
     std::string testLocation = result.getTestLocation().asString();
     printf("Weak Test: %s %d%%", result.getTestId().c_str(), score);
     printf(" (%lu/%lu)\n", result.survivedMutantsCount(), result.totalMutantsCount());
