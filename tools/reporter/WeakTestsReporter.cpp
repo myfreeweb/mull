@@ -170,6 +170,7 @@ readReportFromSQLite(const std::string &reportPath,
     mutation_point as mp
     on ex.mutation_point_id = mp.unique_id
   where mutation_point_id <> ""
+  group by test_id, distinct_mutation_point_id
   order by test_id;
 )query";
 
