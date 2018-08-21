@@ -2,9 +2,11 @@
 
 #include "GoogleTest/GoogleTest_Test.h"
 #include "Toolchain/Mangler.h"
+#include "Toolchain/JITEngine.h"
+#include "Toolchain/Trampolines.h"
 
 #include "Toolchain/Resolvers/InstrumentationResolver.h"
-#include "Toolchain/Resolvers/NativeResolver.h"
+#include "Toolchain/Resolvers/MutationResolver.h"
 
 #include <llvm/IR/Function.h>
 #include <llvm/ExecutionEngine/SectionMemoryManager.h>
@@ -72,11 +74,6 @@ void GoogleTestRunner::loadInstrumentedProgram(ObjectFiles &objectFiles,
   jit.addObjectFiles(objectFiles, resolver, make_unique<SectionMemoryManager>());
 }
 
-void GoogleTestRunner::loadProgram(ObjectFiles &objectFiles, JITEngine &jit) {
-  NativeResolver resolver(overrides);
-  jit.addObjectFiles(objectFiles, resolver, make_unique<SectionMemoryManager>());
-}
-
 ExecutionStatus GoogleTestRunner::runTest(Test *test, JITEngine &jit) {
   *trampoline = &test->getInstrumentationInfo();
 
@@ -127,4 +124,12 @@ ExecutionStatus GoogleTestRunner::runTest(Test *test, JITEngine &jit) {
     return ExecutionStatus::Passed;
   }
   return ExecutionStatus::Failed;
+}
+
+void GoogleTestRunner::loadMutatedProgram(TestRunner::ObjectFiles &objectFiles,
+                                          Trampolines &trampolines,
+                                          JITEngine &jit) {
+  trampolines.allocateTrampolines(mangler);
+  MutationResolver resolver(overrides, trampolines, mangler);
+  jit.addObjectFiles(objectFiles, resolver, make_unique<SectionMemoryManager>());
 }

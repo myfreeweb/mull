@@ -27,13 +27,13 @@ class CustomTestRunner : public TestRunner {
   InstrumentationInfo **trampoline;
 public:
 
-  CustomTestRunner(Mangler &mangler);
+  explicit CustomTestRunner(Mangler &mangler);
   ~CustomTestRunner() override;
 
   void loadInstrumentedProgram(ObjectFiles &objectFiles,
                                Instrumentation &instrumentation,
                                JITEngine &jit) override;
-  void loadProgram(ObjectFiles &objectFiles, JITEngine &jit) override;
+  void loadMutatedProgram(ObjectFiles &objectFiles, Trampolines &trampolines, JITEngine &jit) override;
   ExecutionStatus runTest(Test *test, JITEngine &jit) override;
 
 private:

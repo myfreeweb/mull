@@ -1,21 +1,19 @@
 #pragma once
 
 #include "TestRunner.h"
-#include "Toolchain/JITEngine.h"
 
 #include <llvm/ExecutionEngine/Orc/ExecutionUtils.h>
 
 namespace llvm {
 
 class Function;
-class TargetMachine;
 
 }
 
 namespace mull {
-
-class Test;
 class Mangler;
+class Test;
+class JITEngine;
 struct InstrumentationInfo;
 
 class SimpleTestRunner : public TestRunner {
@@ -23,13 +21,13 @@ class SimpleTestRunner : public TestRunner {
   llvm::orc::LocalCXXRuntimeOverrides overrides;
   InstrumentationInfo **trampoline;
 public:
-  SimpleTestRunner(Mangler &mangler);
+  explicit SimpleTestRunner(Mangler &mangler);
   ~SimpleTestRunner() override;
 
   void loadInstrumentedProgram(ObjectFiles &objectFiles,
                                Instrumentation &instrumentation,
                                JITEngine &jit) override;
-  void loadProgram(ObjectFiles &objectFiles, JITEngine &jit) override;
+  void loadMutatedProgram(ObjectFiles &objectFiles, Trampolines &trampolines, JITEngine &jit) override;
   ExecutionStatus runTest(Test *test, JITEngine &jit) override;
 
 private:

@@ -4,6 +4,7 @@
 #include <llvm/ADT/Triple.h>
 #include <llvm/ExecutionEngine/ExecutionEngine.h>
 #include <llvm/Support/TargetSelect.h>
+#include <Toolchain/Toolchain.h>
 
 using namespace mull;
 
@@ -38,6 +39,7 @@ llvm::TargetMachine &Toolchain::targetMachine() {
   return *machine;
 }
 
-Mangler &Toolchain::mangler() {
+mull::Mangler &Toolchain::mangler() {
   return nameMangler;
 }
+
