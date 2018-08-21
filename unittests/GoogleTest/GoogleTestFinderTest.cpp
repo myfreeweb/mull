@@ -11,6 +11,7 @@
 #include "Filter.h"
 #include "MutationsFinder.h"
 #include "Toolchain/Toolchain.h"
+#include "Toolchain/JITEngine.h"
 
 #include <llvm/IR/CallSite.h>
 #include <llvm/IR/InstrTypes.h>
@@ -136,6 +137,7 @@ mutators:
     compiledModule_tests.getBinary(),
     compiledModule_testees.getBinary()
   });
-  runner.loadProgram(objects, jit);
+  /// TODO: enable eventually
+//  runner.loadProgram(objects, jit);
   runner.runTest(Test1, jit);
 }

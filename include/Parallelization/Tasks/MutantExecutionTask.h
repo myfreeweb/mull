@@ -3,6 +3,8 @@
 #include "MutationResult.h"
 #include "Toolchain/JITEngine.h"
 
+#include <llvm/Object/ObjectFile.h>
+
 namespace mull {
 
 class MutationPoint;
@@ -12,6 +14,7 @@ class TestRunner;
 class Config;
 class Toolchain;
 class Filter;
+class Mangler;
 class progress_counter;
 
 class MutantExecutionTask {
@@ -20,20 +23,23 @@ public:
   using Out = std::vector<std::unique_ptr<MutationResult>>;
   using iterator = In::const_iterator;
 
-  MutantExecutionTask(Driver &driver,
-                      ProcessSandbox &sandbox,
+  MutantExecutionTask(ProcessSandbox &sandbox,
                       TestRunner &runner,
                       Config &config,
-                      Toolchain &toolchain,
-                      Filter &filter);
+                      Filter &filter,
+                      Mangler &mangler,
+                      std::vector<llvm::object::ObjectFile *> &objectFiles,
+                      std::vector<std::string> &mutatedFunctionNames);
 
   void operator() (iterator begin, iterator end, Out &storage, progress_counter &counter);
+private:
   JITEngine jit;
   ProcessSandbox &sandbox;
   TestRunner &runner;
   Config &config;
-  Toolchain &toolchain;
   Filter &filter;
-  Driver &driver;
+  Mangler &mangler;
+  std::vector<llvm::object::ObjectFile *> &objectFiles;
+  std::vector<std::string> &mutatedFunctionNames;
 };
 }

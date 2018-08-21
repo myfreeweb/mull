@@ -3,7 +3,9 @@
 #include "ForkProcessSandbox.h"
 
 #include "Toolchain/Toolchain.h"
+#include "Toolchain/Trampolines.h"
 #include "Config.h"
+#include "Toolchain/Mangler.h"
 
 #include "CustomTestFramework/CustomTest_Test.h"
 #include "CustomTestFramework/CustomTestRunner.h"
@@ -15,6 +17,8 @@
 using namespace mull;
 using namespace llvm;
 using namespace std;
+
+using Mangler = mull::Mangler;
 
 static TestModuleFactory SharedTestModuleFactory;
 static LLVMContext context;
@@ -53,7 +57,8 @@ TEST(CustomTestRunner, noTestNameSpecified) {
   CustomTest_Test test("test", "mull", {}, nullptr, {});
   ForkProcessSandbox sandbox;
   JITEngine jit;
-  runner.loadProgram(objects, jit);
+  Trampolines trampolines({});
+  runner.loadMutatedProgram(objects, trampolines, jit);
   ExecutionResult result = sandbox.run([&]() {
     return runner.runTest(&test, jit);
   }, TestTimeout);
@@ -77,7 +82,8 @@ TEST(CustomTestRunner, tooManyParameters) {
   CustomTest_Test test("test", "mull", { "arg1", "arg2" }, nullptr, {});
   ForkProcessSandbox sandbox;
   JITEngine jit;
-  runner.loadProgram(objects, jit);
+  Trampolines trampolines({});
+  runner.loadMutatedProgram(objects, trampolines, jit);
   ExecutionResult result = sandbox.run([&]() {
     return runner.runTest(&test, jit);
   }, TestTimeout);
@@ -101,7 +107,8 @@ TEST(CustomTestRunner, runPassingTest) {
   CustomTest_Test test("test", "mull", { "passing_test" }, nullptr, {});
   ForkProcessSandbox sandbox;
   JITEngine jit;
-  runner.loadProgram(objects, jit);
+  Trampolines trampolines({});
+  runner.loadMutatedProgram(objects, trampolines, jit);
   ExecutionResult result = sandbox.run([&]() {
     return runner.runTest(&test, jit);
   }, TestTimeout);
@@ -118,7 +125,7 @@ TEST(CustomTestRunner, runFailingTest) {
   vector<object::ObjectFile *> objects;
   auto loadedModules = loadTestModules();
   for (auto &m : loadedModules) {
-    Module *module = m.get()->getModule();
+    Module *module = m->getModule();
     if (!constructor) {
       constructor = module->getFunction("initGlobalVariable");
     }
@@ -130,7 +137,8 @@ TEST(CustomTestRunner, runFailingTest) {
   CustomTest_Test test("test", "mull", { "failing_test" }, nullptr, { constructor });
   ForkProcessSandbox sandbox;
   JITEngine jit;
-  runner.loadProgram(objects, jit);
+  Trampolines trampolines({});
+  runner.loadMutatedProgram(objects, trampolines, jit);
   ExecutionResult result = sandbox.run([&]() {
     return runner.runTest(&test, jit);
   }, TestTimeout);
@@ -154,7 +162,8 @@ TEST(CustomTestRunner, attemptToRunUnknownTest) {
   CustomTest_Test test("test", "mull", { "foobar" }, nullptr, {});
   ForkProcessSandbox sandbox;
   JITEngine jit;
-  runner.loadProgram(objects, jit);
+  Trampolines trampolines({});
+  runner.loadMutatedProgram(objects, trampolines, jit);
   ExecutionResult result = sandbox.run([&]() {
     return runner.runTest(&test, jit);
   }, TestTimeout);

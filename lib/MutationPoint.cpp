@@ -4,6 +4,7 @@
 
 #include "Mutators/Mutator.h"
 #include <llvm/Transforms/Utils/Cloning.h>
+#include <MutationPoint.h>
 
 using namespace llvm;
 using namespace mull;
@@ -17,6 +18,11 @@ Instruction &MutationPointAddress::findInstruction(Module *module) {
   llvm::Instruction &instruction = *(std::next(bb.begin(), getIIndex()));
 
   return instruction;
+}
+
+Function &MutationPointAddress::findFunction(Module *module) {
+  llvm::Function &function = *(std::next(module->begin(), getFnIndex()));
+  return function;
 }
 
 int MutationPointAddress::getFunctionIndex(Function *function) {
@@ -52,16 +58,47 @@ MutationPointAddress::enumerateInstructions(
   }
 }
 
+llvm::Instruction &MutationPointAddress::findInstruction(llvm::Function *function) {
+  llvm::BasicBlock &bb = *(std::next(function->begin(), getBBIndex()));
+  llvm::Instruction &instruction = *(std::next(bb.begin(), getIIndex()));
+
+  return instruction;
+}
+
+MutationPointAddress::MutationPointAddress(int FnIndex, int BBIndex, int IIndex) :
+    FnIndex(FnIndex), BBIndex(BBIndex), IIndex(IIndex) {
+
+  identifier = std::to_string(FnIndex) + "_" +
+      std::to_string(BBIndex) + "_" +
+      std::to_string(IIndex);
+}
+
+int MutationPointAddress::getFnIndex() { return FnIndex; }
+
+int MutationPointAddress::getBBIndex() { return BBIndex; }
+
+int MutationPointAddress::getIIndex() { return IIndex; }
+
+std::string MutationPointAddress::getIdentifier() {
+  return identifier;
+}
+
+std::string MutationPointAddress::getIdentifier() const {
+  return identifier;
+}
+
 #pragma mark - MutationPoint
 
 MutationPoint::MutationPoint(Mutator *mutator,
                              MutationPointAddress Address,
-                             Value *Val,
-                             MullModule *m,
+                             llvm::Value *Val,
+                             llvm::Function *function,
                              std::string diagnostics,
-                             const SourceLocation &location) :
-  mutator(mutator), Address(Address), OriginalValue(Val),
-  module(m), diagnostics(diagnostics), sourceLocation(location), reachableTests()
+                             const SourceLocation &location,
+                             MullModule *m) :
+  mutator(mutator), Address(Address), OriginalValue(Val), module(m),
+  originalFunction(function), mutatedFunction(nullptr), diagnostics(diagnostics),
+  sourceLocation(location), reachableTests()
 {
   string moduleID = module->getUniqueIdentifier();
   string addressID = Address.getIdentifier();
@@ -105,11 +142,12 @@ MullModule *MutationPoint::getOriginalModule() const {
 }
 
 void MutationPoint::addReachableTest(Test *test, int distance) {
-  reachableTests.push_back(make_pair(test, distance));
+  reachableTests.emplace_back(test, distance);
 }
 
-void MutationPoint::applyMutation(MullModule &module) {
-  mutator->applyMutation(module.getModule(), Address);
+void MutationPoint::applyMutation() {
+  assert(mutatedFunction != nullptr);
+  mutator->applyMutation(mutatedFunction, Address);
 }
 
 const std::vector<std::pair<Test *, int>> &MutationPoint::getReachableTests() const {
@@ -134,4 +172,25 @@ const std::string &MutationPoint::getDiagnostics() const {
 
 const SourceLocation &MutationPoint::getSourceLocation() const {
   return sourceLocation;
+}
+
+Function *MutationPoint::getOriginalFunction() {
+  return originalFunction;
+}
+
+void MutationPoint::setMutatedFunction(llvm::Function *function) {
+  function->setName(getMutatedFunctionName());
+  this->mutatedFunction = function;
+}
+
+std::string MutationPoint::getTrampolineName() {
+  return originalFunction->getName().str() + "_" + module->getUniqueIdentifier() + "_trampoline";
+}
+
+std::string MutationPoint::getMutatedFunctionName() {
+  return getUniqueIdentifier();
+}
+
+std::string MutationPoint::getOriginalFunctionName() {
+  return originalFunction->getName().str() + "_" + module->getUniqueIdentifier() + "_original";
 }

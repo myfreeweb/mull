@@ -1,6 +1,7 @@
 #pragma once 
 
 #include <string>
+#include <thread>
 
 #include <llvm/IR/Module.h>
 
@@ -10,10 +11,17 @@ class LLVMContext;
 
 namespace mull {
 
+class MutationPoint;
+class JITEngine;
+
   class MullModule {
     std::unique_ptr<llvm::Module> module;
     std::string uniqueIdentifier;
     std::string modulePath;
+
+    std::map<llvm::Function *, std::vector<MutationPoint *>> mutationPoints;
+    std::mutex mutex;
+
     MullModule(std::unique_ptr<llvm::Module> llvmModule);
   public:
     MullModule(std::unique_ptr<llvm::Module> llvmModule,
@@ -22,23 +30,16 @@ namespace mull {
 
     std::unique_ptr<MullModule> clone(llvm::LLVMContext &context);
 
-    llvm::Module *getModule() {
-      assert(module.get());
-      return module.get();
-    }
+    llvm::Module *getModule();
+    llvm::Module *getModule() const;
+    std::string getUniqueIdentifier();
+    std::string getUniqueIdentifier() const;
 
-    llvm::Module *getModule() const {
-      assert(module.get());
-      return module.get();
-    }
+    std::string getInstrumentedUniqueIdentifier() const;
+    std::string getMutatedUniqueIdentifier() const;
 
-    std::string getUniqueIdentifier() {
-      return uniqueIdentifier;
-    }
-
-    std::string getUniqueIdentifier() const {
-      return uniqueIdentifier;
-    }
+    std::vector<std::string> prepareMutations();
+    void addMutation(MutationPoint *point);
   };
 
 }

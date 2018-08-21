@@ -1,7 +1,6 @@
 #pragma once
 
 #include "TestRunner.h"
-#include "Toolchain/JITEngine.h"
 
 #include <llvm/ExecutionEngine/Orc/ExecutionUtils.h>
 #include <llvm/Object/Binary.h>
@@ -15,7 +14,8 @@ class Function;
 }
 
 namespace mull {
-
+class Mangler;
+class JITEngine;
 struct InstrumentationInfo;
 class Mangler;
 
@@ -28,12 +28,11 @@ class GoogleTestRunner : public TestRunner {
   std::string fGoogleTestRun;
   InstrumentationInfo **trampoline;
 public:
-
-  GoogleTestRunner(Mangler &mangler);
-  ~GoogleTestRunner();
+  explicit GoogleTestRunner(Mangler &mangler);
+  ~GoogleTestRunner() override;
 
   void loadInstrumentedProgram(ObjectFiles &objectFiles, Instrumentation &instrumentation, JITEngine &jit) override;
-  void loadProgram(ObjectFiles &objectFiles, JITEngine &jit) override;
+  void loadMutatedProgram(ObjectFiles &objectFiles, Trampolines &trampolines, JITEngine &jit) override;
   ExecutionStatus runTest(Test *test, JITEngine &jit) override;
 
 private:
