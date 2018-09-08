@@ -183,7 +183,7 @@ endif()
 set(mull_compileflags ${default_compile_flags} ${LLVM_CXX_FLAGS})
 set_target_properties(mull
   PROPERTIES COMPILE_FLAGS
-  "${mull_compileflags}"
+  "-D_GLIBCXX_USE_CXX11_ABI=0 ${mull_compileflags}"
 )
 
 # Link flags
@@ -194,7 +194,7 @@ endif()
 set(mull_link_flags
   "${default_link_flags} ${LLVM_LINK_FLAGS}"
 )
-set_target_properties(mull PROPERTIES LINK_FLAGS "${mull_link_flags}")
+set_target_properties(mull PROPERTIES LINK_FLAGS "-Wl,-rpath,${LLVM_ROOT}/lib ${mull_link_flags}")
 
 # The following is needed to make CMake to generate a folder structure in Xcode
 # that corresponds to a physical folder structure.

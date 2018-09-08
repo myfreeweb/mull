@@ -20,5 +20,5 @@ endif()
 set(googletest_compileflags ${default_compile_flags} ${LLVM_CXX_FLAGS})
 set_target_properties(google-test
   PROPERTIES COMPILE_FLAGS
-  "${googletest_compileflags}"
+  "-D_GLIBCXX_USE_CXX11_ABI=0 ${googletest_compileflags}"
 )

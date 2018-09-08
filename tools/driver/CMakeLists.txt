@@ -3,6 +3,8 @@ add_executable(mull-driver driver.cpp)
 
 target_link_libraries(mull-driver
   mull
+  dl
+  tinfo
 )
 
 set(mulldriver_rpath "") # to be filled later.
@@ -21,7 +23,7 @@ endif()
 set(mulldriver_compileflags ${default_compile_flags} ${LLVM_CXX_FLAGS})
 set_target_properties(mull-driver
   PROPERTIES COMPILE_FLAGS
-  "${mulldriver_compileflags}"
+  "-D_GLIBCXX_USE_CXX11_ABI=0 ${mulldriver_compileflags}"
 )
 
 # Link flags
@@ -30,7 +32,7 @@ if(NOT ${default_link_flags})
 set(default_link_flags "")
 endif()
 set(mull_driver_link_flags
-  "${default_link_flags} ${LLVM_LINK_FLAGS} -rdynamic -pthread"
+	"-Wl,-rpath,${LLVM_ROOT}/lib ${default_link_flags} ${LLVM_LINK_FLAGS} -rdynamic -pthread"
 )
 set_target_properties(mull-driver PROPERTIES LINK_FLAGS "${mull_driver_link_flags}")
 

@@ -8,8 +8,14 @@ add_executable(mull-reporter
   reporter.cpp
 )
 set_target_properties(mull-reporter PROPERTIES
-  LINK_FLAGS "${LLVM_LINK_FLAGS} ${llvm_libraries} -lsqlite3"
-  COMPILE_FLAGS "-fno-rtti"
+  LINK_FLAGS "${LLVM_LINK_FLAGS}"
+  COMPILE_FLAGS "-fno-rtti -D_GLIBCXX_USE_CXX11_ABI=0"
+)
+target_link_libraries(mull-reporter
+  sqlite3
+  pthread
+  tinfo
+  ${llvm_libraries}
 )
 
 INSTALL(TARGETS mull-reporter

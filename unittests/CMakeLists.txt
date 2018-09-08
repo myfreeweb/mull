@@ -61,8 +61,13 @@ target_link_libraries(MullUnitTests
   mull
 
   google-test
+  dl
+  tinfo
 
-  ${MULL_DEPENDENCY_LLVM_LIBRARIES}
+  #${LD_START_GROUP}
+
+  #${MULL_DEPENDENCY_LLVM_LIBRARIES}
+  #${LD_END_GROUP}
 
   ${CMAKE_THREAD_LIBS_INIT}
 )
@@ -75,7 +80,7 @@ endif()
 set(mull_unittests_compileflags ${default_compile_flags} ${LLVM_CXX_FLAGS})
 set_target_properties(MullUnitTests
   PROPERTIES COMPILE_FLAGS
-  "${mull_unittests_compileflags}"
+  "-D_GLIBCXX_USE_CXX11_ABI=0 ${mull_unittests_compileflags}"
 )
 
 # Link flags
@@ -86,7 +91,7 @@ endif()
 set(mull_unittests_link_flags
   "${default_link_flags} ${LLVM_LINK_FLAGS} -rdynamic"
 )
-set_target_properties(MullUnitTests PROPERTIES LINK_FLAGS "${mull_unittests_link_flags}")
+set_target_properties(MullUnitTests PROPERTIES LINK_FLAGS "-Wl,-rpath,${LLVM_ROOT}/lib ${mull_unittests_link_flags}")
 
 # @rpath
 get_target_property(default_rpath MullUnitTests INSTALL_RPATH)
